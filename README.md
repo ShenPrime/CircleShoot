@@ -1,4 +1,4 @@
-# Hordeshooter
+# CircleShoot
 A simple shooter horde game 
 
 

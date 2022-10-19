@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:ital@1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style/styles.css" />
+    <title>Circle Shoot</title>
+  </head>
+  <body>
+    <div class="startGame">
+      <h1>Circle Shoot</h1>
+      <h2>Instructions</h2>
+      <h3>
+        Use W A S D keys to move the white ball around the screen and use your
+        mouse to aim and shoot. avoid collision with enemies that chase you, and
+        if you're lucky, collect glowing circles for cool effects!<br><br> hint: Press 'X' to pause the game anytime!
+      </h3>
+      <button class="strtBtn">Got it, now let me play!</button>
+    </div>
+
+    <div class="gameOver">
+      <h1>Game Over! They Got you! </h1>
+      <h2>You Scored: <span class="score">0</span></h2>
+      <button class="restartBtn">Let me try one more time...</button>
+    </div>
+
+
+    <div class='pause'> 
+      <h1>GAME PAUSED</h1>
+      <h2>Your score is: <span class="pauseScore">0</span></h2>
+      <h3>Press 'Z' to unpause!</h3>
+    </div>
+    <canvas></canvas>
+    <script src="./scripts/player.js"></script>
+    <script src="./scripts/enemies.js"></script>
+    <script src="./scripts/randomdrops.js"></script>
+    <script src="./scripts/projectile.js"></script>
+    <script src="./scripts/particles.js"></script>
+    <script src="./scripts/index.js"></script>
+  </body>
+</html>

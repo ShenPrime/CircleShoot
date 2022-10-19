@@ -1,0 +1,54 @@
+body{
+    margin: 0;
+    background-color: black;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    align-content: center;
+    justify-items: center;
+    font-family: 'Montserrat', sans-serif; 
+}
+
+canvas { 
+    
+    cursor: url('https://findicons.com/files/icons/1156/fugue/16/target.png'), auto;
+    font-family: 'Montserrat', sans-serif; 
+}
+
+.startGame {
+    margin-top: 150px;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+}
+
+h1, h2, h3{
+    color: white;
+}
+
+button { 
+    margin-top: 30px;
+    padding: 10px;
+    font-family: 'Montserrat', sans-serif; 
+    font-size: 20px;
+}
+
+
+
+.gameOver {
+    margin-top: 150px;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+}
+
+.score {
+    color: white;
+}

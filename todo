@@ -1,0 +1,26 @@
+TO DO:
+
+-Add TODO comments
+
+-Split up large functions
+
+-Remove any unused variables
+
+-Rework the horrendous classes
+
+-Better comments because they kinda suck ass
+
+-Maybe split up index.js into more files instead
+
+-More stuff
+
+-Create universal function that takes in elements
+as input and sets their display style to 'none'
+
+-General renaming of variables
+
+-Universal function that takes in an object
+and returns its position
+
+-Restructure/reorganize code into better places
+(code relating to enemy should all be in inside enemy)

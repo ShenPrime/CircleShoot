@@ -1,8 +1,8 @@
 TODO:
 
--Split up large functions
+-Split up large functions - IN PROGRESS
 
--Remove any unused variables
+-Remove any unused variables - DONE
 
 -Rework the horrendous classes
 
@@ -25,7 +25,7 @@ and returns its position
 
 -Change Health to start at 1 instead of zero cause wtf
 
--LINE 253 - Figure out why it doesn't work
+-LINE 253 - Figure out why it doesn't work - DONE
 
 -Test and refine dropchance till it feels fair
     1 in 10 feels okay. maybe 1 in 20 might be better

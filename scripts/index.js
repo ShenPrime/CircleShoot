@@ -90,66 +90,12 @@ function spawnEnemies() {
 
         //enemy x and y coordinates
         const [x, y] = getEnemyCoordinates(radius);
-
         const color = getRandomColor();
+        const angle = getAngle(player, x, y);
+        let velocity = getVelocity(x, y, angle, difficulty);
+        createEnemy(enemies, x, y, radius, color, velocity, health);
 
-        const angle = Math.atan2(player.y - y, player.x - x); //calculate angle based on player position - enemy spawn
-                                                              // position
-        let velocity = {
-            // use the angle to determine the direction and velocity of the enemy (to move towards the player)
-            x: Math.cos(angle) * difficulty,
-            y: Math.sin(angle) * difficulty,
-        };
-
-        enemies.push(new Enemy(x, y, radius, color, velocity, health)); // create a new enemy object based on the above
-                                                                        // variables ( it will spawn every 1 second
-                                                                        // from a random spot outside the canvas
-                                                                        // boundries and move in)
     }, 600);
-}
-
-function getEnemyCoordinates(radius) {
-    let x;
-    let y;
-
-    if (Math.random() < 0.5) {
-        x = Math.random() < 0.5 ? 0 - radius : canvas.width + radius;
-        y = Math.random() * canvas.height;
-    } else {
-        y = Math.random() < 0.5 ? 0 - radius : canvas.height + radius;
-        x = Math.random() * canvas.width;
-    }
-    return [x, y]
-
-}
-
-function getRandomColor() {
-    let randomColor = Math.random() * 360;
-    return `hsl(${randomColor}, 50%, 50%`;
-}
-
-function drawScore() {
-    ctx.fillStyle = "white";
-    ctx.font = "20px Montserrat";
-    ctx.fillText(`Score: ${player.score}`, 10, 30);
-}
-
-function drawLives() {
-    ctx.fillStyle = "white";
-    ctx.font = "20px Montserrat";
-    ctx.fillText(`Lives : ${player.lives}`, 10, 70);
-}
-
-function drawDifficulty() {
-    ctx.fillStyle = "white";
-    ctx.font = "20px Montserrat";
-    ctx.fillText(`Difficulty : ${difficulty}`, 10, 110);
-}
-
-function drawStats() {
-    drawScore();
-    drawDifficulty();
-    drawLives();
 }
 
 //TODO: Figure out a proper formula for difficulty
@@ -219,18 +165,16 @@ function animate() {
 
     //------------------------------------------------------
 
-    //TODO create function for all updates
-    powerUps.forEach((ele) => {
-        ele.update();
-    });
+    function updateElements(eleArray) {
+        eleArray.forEach(ele => ele.update());
+    }
 
-    projectiles.forEach((ele) => {
-        ele.update();
-    });
+    updateElements(powerUps);
+    updateElements(projectiles);
 
     particles.forEach((particle, index) => {
         if (particle.alpha <= 0) {
-            particles.splice(index, 1);
+            deleteGameObjectFromArray(particles, index);
         } else {
             particle.update();
         }
@@ -255,7 +199,7 @@ function animate() {
             const projectileCollision = checkCollision(enemy, projectile, dist);
 
             if (projectileCollision && enemy.health === 0) {
-                let dropChance = getRandomNumber();
+                let dropChance = getRandomNumber(10);
                 const powerUpStatus = checkPowerUpStatus(player);
 
                 if (dropChance === 5 && powerUpStatus === true) {
@@ -264,137 +208,21 @@ function animate() {
 
                 triggerExplosion(particles, projectile, enemy);
                 setTimeout(() => {
-                    deleteElement(enemies, index);
-                    deleteElement(projectiles, proIndex);
+                    deleteGameObjectFromArray(enemies, index);
+                    deleteGameObjectFromArray(projectiles, proIndex);
                     increasePlayerScore(10, player);
                 }, 0);
 
             } else if (projectileCollision && enemy.health > 0) {
                 shrinkEnemy(enemy);
                 increasePlayerScore(20, player);
-                deleteElement(projectiles, proIndex);
+                deleteGameObjectFromArray(projectiles, proIndex);
                 createNewParticles(particles, projectile, enemy);
             }
         });
     });
 
-    function createNewParticles(particles, projectile, enemy) {
-        for (let i = 0; i < 8; i++) {
-            particles.push(
-                new Particle(projectile.x, projectile.y, 3, enemy.color, {
-                    x: (Math.random() - 0.5) * (Math.random() * 6),
-                    y: (Math.random() - 0.5) * (Math.random() * 6),
-                })
-            );
-        }
-
-    }
-
-    function shrinkEnemy(enemy) {
-        enemy.radius -= 20;
-        enemy.health -= 1;
-    }
-
-    function deleteElement(array, index) {
-        array.splice(index, 1);
-    }
-
-    function increasePlayerScore(val, player) {
-        player.score += val;
-    }
-
-    function getRandomNumber() {
-        return Math.round(Math.random() * 10);
-    }
-
-    function checkPowerUpStatus(player) {
-        return player.hasPowerUp === false && powerUpDropped === false
-    }
-
-    function dropPowerUp(projectile) {
-        powerUpDropped = true;
-        powerUps.push(
-            new RandomDrops(
-                projectile.x,
-                projectile.y,
-                15,
-                randomDrops[Math.floor(Math.random() * randomDrops.length)]
-            )
-        );
-    }
-
-    function triggerExplosion(particles, projectile, enemy) {
-
-        for (let i = 0; i < 25; i++) {
-            particles.push(
-                //push particles into the particle array when a projectile collides with an enemy. this
-                // produces explosion effect
-                new Particle(
-                    projectile.x,
-                    projectile.y,
-                    Math.random() * 4,
-                    enemy.color,
-                    {
-                        x: (Math.random() - 0.5) * (Math.random() * 6),
-                        y: (Math.random() - 0.5) * (Math.random() * 6),
-                    }
-                )
-            );
-        }
-    }
-
-    function handleCollision(player, enemies, timer, index, damageID) {
-        player.lives -= 1;
-        enemies.splice(index, 1);
-        player.color = "red";
-        damageID = setInterval(() => {
-            timer2++;
-
-            if (timer2 === 3) {
-                clearInterval(damageID);
-                player.color = "white";
-                timer2 = 0;
-            }
-
-        }, 100);
-    }
-
-    function checkCollision(player, enemy, dist) {
-        return dist - enemy.radius - player.radius < 1;
-    }
-
-    function getDistance(obj1, obj2) {
-        return Math.hypot(obj1.x - obj2.x, obj1.y - obj2.y);
-    }
-
-    //TODO: better naming! Also turn this into a function
-    projectiles.forEach((ele, proIndex) => {
-        // destroy projectiles when they leave screen boundries by looping through the projectile array and checking
-        // each projectile position TODO: destroy projectile
-        if (ele.x + ele.radius > canvas.width) {
-            setTimeout(() => {
-                projectiles.splice(proIndex, 1);
-            });
-        }
-
-        if (ele.x - ele.radius < 0) {
-            setTimeout(() => {
-                projectiles.splice(proIndex, 1);
-            });
-        }
-
-        if (ele.y + ele.radius > canvas.height) {
-            setTimeout(() => {
-                projectiles.splice(proIndex, 1);
-            });
-        }
-
-        if (ele.y - ele.radius < 0) {
-            setTimeout(() => {
-                projectiles.splice(proIndex, 1);
-            });
-        }
-    });
+    cleanUpOutOfBoundsProjectiles(projectiles, canvas);
 
     //TODO: create function that checks if playing picked up powerup
     powerUps.forEach((drop, index) => {
@@ -486,17 +314,21 @@ function shootProjectile() {
 }
 
 function startGame() {
-    //TODO: create function to set non-game element's display to none
-    strtBtn.style.display = "none";
-    strtScreen.style.display = "none";
-    gameOverScreen.style.display = "none";
-    canvas.style.display = "block";
-    pauseScreen.style.display = "none";
+    hideElements([strtBtn, strtScreen, gameOverScreen, pauseScreen]);
+    revealElements([canvas]);
     animate();
     spawnEnemies();
 
     //TODO: rename this to something more clear
     increaseDifficulty();
+}
+
+function hideElements(elementsArray) {
+    elementsArray.forEach(element => element.style.display = 'none');
+}
+
+function revealElements(elementsArray) {
+    elementsArray.forEach(element => element.style.display = 'block');
 }
 
 function gameOver() {

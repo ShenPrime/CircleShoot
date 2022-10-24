@@ -1,12 +1,10 @@
 # TODO:
 
--Split up large functions - IN PROGRESS
+~~-Split up large functions - DONE~~
 
 ~~-Remove any unused variables - DONE~~
 
 -Rework the horrendous classes
-
--Better comments because they kinda suck ass
 
 ~~-Maybe split up index.js into more files instead~~
 
@@ -17,8 +15,8 @@
 
 -General renaming of variables
 
--Universal function that takes in an object
-and returns its position
+~~-Universal function that takes in an object~~
+~~and returns its position - DONE~~
 
 -Restructure/reorganize code into better places
 (code relating to enemy should all be in inside enemy)

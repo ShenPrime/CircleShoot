@@ -204,3 +204,45 @@ function createProjectile(projectileArray, player, projectileRadius, color, velo
         new Projectile(player.x, player.y, projectileRadius, color, velocity)
     );
 }
+
+function hideElements(elementsArray) {
+    elementsArray.forEach(element => element.style.display = 'none');
+}
+
+function revealElements(elementsArray) {
+    elementsArray.forEach(element => element.style.display = 'block');
+}
+
+function stopIntervals(intervalsArray) {
+    intervalsArray.forEach(interval => clearInterval(interval));
+}
+
+function stopAudio(audio) {
+    audio.pause();
+    audio.currentTime = 0;
+}
+
+function changeElementInnerText(element, text) {
+    element.innerText = text;
+}
+
+function resetArrays(arrayOfArrays) {
+    arrayOfArrays.forEach(array => array.splice(0, array.length));
+}
+
+function createNewPlayer(canvas) {
+    x = canvas.width / 2;
+    y = canvas.height / 2;
+    return new Player(x, y);
+}
+
+function setAudio(audio) {
+    audio.currentTime = 0;
+    audio.play();
+    audio.volume = 0.1;
+    audio.playbackRate = 1;
+}
+
+function resetTimers(arrayOfTimers) {
+    arrayOfTimers.forEach(timer => timer = 0);
+}

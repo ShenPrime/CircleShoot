@@ -301,54 +301,19 @@ function startGame() {
     increaseDifficulty();
 }
 
-function hideElements(elementsArray) {
-    elementsArray.forEach(element => element.style.display = 'none');
-}
-
-function revealElements(elementsArray) {
-    elementsArray.forEach(element => element.style.display = 'block');
-}
-
 function gameOver() {
     cancelAnimationFrame(animationID);
-
-    //TODO: put all this in a stopAllIntervals function
-    clearInterval(enemiesID);
-    clearInterval(cannonID);
-    clearInterval(speedID);
-    clearInterval(healthID);
-    clearInterval(damageID);
-
-    //TODO: backgroundAudioSTOP function for this
-    backgroundAudio.pause();
-    backgroundAudio.currentTime = 0;
-
-    //TODO: function for this
-    canvas.style.display = "none";
-    gameOverScreen.style.display = "block";
-    endScore.innerText = `${player.score}`;
-
-    //TODO: resetArrays function for this
-    projectiles = [];
-    enemies = [];
-    particles = [];
-    powerUps = [];
-
-    //TODO: resetPlayerPosition function for this
-    x = canvas.width / 2;
-    y = canvas.height / 2;
-    player = new Player(x, y, 15, "white");
+    stopIntervals([enemiesID, cannonID, speedID, healthID, damageID]);
+    stopAudio(backgroundAudio);
+    hideElements([canvas]);
+    revealElements([gameOverScreen]);
+    changeElementInnerText(endScore, player.score);
+    resetArrays([projectiles, enemies, particles, powerUps]); //TODO: fix visual bug related to this
+    resetTimers([timer, timer2]);
+    player = createNewPlayer(canvas);
     powerUpDropped = false;
-    player.hasPowerUp = false;
-
-    //?
     difficulty = 2;
     proRadius = 5;
-
-    //TODO: resetTimers function
-    timer = 0;
-    timer2 = 0;
-
 }
 
 function pause() {
@@ -360,17 +325,19 @@ function pause() {
     } else {
         cancelAnimationFrame(animationID);
         clearInterval(enemiesID);
+        backgroundAudio.pause();
+        hideElements([canvas]);
+        revealElements([pauseScreen]);
+        changeElementInnerText(pauseScore, player.score);
     }
 
 }
 
 window.addEventListener("load", () => {
-    canvas.style.display = "none";
-    gameOverScreen.style.display = "none";
-    pauseScreen.style.display = "none";
+    hideElements([canvas, gameOverScreen, pauseScreen]);
 
     restartBtn.addEventListener("click", () => {
-        gameOverScreen.style.display = "none";
+        hideElements([gameOverScreen]);
         startGame();
     });
 
@@ -380,16 +347,10 @@ window.addEventListener("load", () => {
 
     addEventListener("click", (event) => {
         shootProjectile(event);
-        //TODO: function to handle audio settings
-        audio.currentTime = 0;
-        audio.play();
-        audio.volume = 0.1;
-        audio.playbackRate = 1;
+        setAudio(audio);
     });
 
     addEventListener("keydown", (event) => {
-        //TODO: key = pressedKey()
-        //TODO: switch statement to handle behavior based on keyPressed
         if (event.key === "a" || event.key === 'ArrowLeft') {
             isLeft = true;
         }
@@ -409,7 +370,6 @@ window.addEventListener("load", () => {
     });
 
     addEventListener("keyup", (event) => {
-        //TODO: same thing as the keydown
         if (event.key === "a" || event.key === "ArrowLeft") {
             isLeft = false;
         }
@@ -428,16 +388,10 @@ window.addEventListener("load", () => {
     });
 
     addEventListener("keypress", (event) => {
-        //TODO: pressedKey function
         if (event.key === "x") {
 
             if (isRunning) {
-                //TODO: handleGameIsPaused Function
                 pause();
-                backgroundAudio.pause();
-                canvas.style.display = "none";
-                pauseScreen.style.display = "block";
-                pauseScore.innerText = `${player.score}`;
             }
 
         }
@@ -451,8 +405,8 @@ window.addEventListener("load", () => {
                 //TODO: handleGameIsRunning function
                 pause();
                 backgroundAudio.pause();
-                canvas.style.display = "block";
-                pauseScreen.style.display = "none";
+                revealElements([canvas]);
+                hideElements([pauseScreen]);
                 spawnEnemies();
             }
 

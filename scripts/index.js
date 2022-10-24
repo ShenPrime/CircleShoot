@@ -78,7 +78,7 @@ function spawnEnemies() {
     enemiesID = setInterval(() => {
         //TODO: Why in the hell does this start with 0 instead of 1?
         let health = 0;
-        let radius = Math.floor(Math.random() * 40);
+        let radius = getRandomNumber(40);
 
         if (radius < 10) {
             radius += 10;
@@ -88,7 +88,6 @@ function spawnEnemies() {
             health = 1;
         }
 
-        //enemy x and y coordinates
         const [x, y] = getEnemyCoordinates(radius);
         const color = getRandomColor();
         const angle = getAngle(player, x, y);
@@ -157,17 +156,12 @@ function animate() {
     //------------------------------------------
     //-------------game object draw functions -----------
 
-    //TODO: consider turning this into somekind of player related function
     player.drawPlayer();
     drawStats(); //Draw difficulty, lives, score
     increaseDifficulty();
     playerMovement();
 
     //------------------------------------------------------
-
-    function updateElements(eleArray) {
-        eleArray.forEach(ele => ele.update());
-    }
 
     updateElements(powerUps);
     updateElements(projectiles);
@@ -224,72 +218,59 @@ function animate() {
 
     cleanUpOutOfBoundsProjectiles(projectiles, canvas);
 
-    //TODO: create function that checks if playing picked up powerup
     powerUps.forEach((drop, index) => {
-        //check if player collides with powerup by looping through powerup array and checking position relative to
-        // player position TODO: create function getPowerUpPosition
-        let powerUpDist = Math.hypot(player.x - drop.x, player.y - drop.y);
+        let powerUpDist = getDistance(player, drop);
 
-        if (
-            powerUpDist - drop.radius - player.radius < 1 &&
-            drop.name === "health"
-        ) {
-            //TODO: create function addHealth
-            //the health drop adds one health to the player
-            player.lives += 1;
-            player.color = "green";
-            powerUps.splice(index, 1);
+        if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'health') {
+            addHealth(player);
+            changePlayerColor(player, 'green');
+            deleteGameObjectFromArray(powerUps, index);
             healthID = setInterval(() => {
                 timer++;
 
-                //TODO: figure out wtf is happening here
                 if (timer === 3) {
                     clearInterval(healthID);
-                    player.color = "white";
+                    changePlayerColor(player, 'white');
                     timer = 0;
-                    player.hasPowerUp = false;
+                    changePowerUpStatus(player, false);
                     powerUpDropped = false;
                 }
 
             }, 100);
 
-        } else if (
-            powerUpDist - drop.radius - player.radius < 1 &&
-            drop.name === "speed"
-        ) {
+        } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'speed') {
             //the speed drop sets the move speed to 6 for 20 seconds
-            player.hasPowerUp = true;
-            player.velocity = 6;
-            powerUps.splice(index, 1);
+            changePowerUpStatus(player, true);
+            changePlayerSpeed(player, 6);
+            deleteGameObjectFromArray(powerUps, index);
             speedID = setInterval(() => {
                 timer++;
 
                 if (timer === 20) {
                     clearInterval(speedID);
-                    player.velocity = 3;
+                    changePlayerSpeed(player, 3);
                     timer = 0;
-                    player.hasPowerUp = false;
+                    changePowerUpStatus(player, false);
                     powerUpDropped = false;
                 }
 
             }, 1000);
 
-        } else if (
-            //the cannon drop increases projectile radius to 20 for 20 seconds
-            powerUpDist - drop.radius - player.radius < 1 &&
-            drop.name === "cannon"
-        ) {
-            player.hasPowerUp = true;
-            proRadius = 30;
-            powerUps.splice(index, 1);
+
+        } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'cannon') {
+            changePowerUpStatus(player, true);
+            changeProjectileRadius(30);
+            // proRadius = 30;
+            deleteGameObjectFromArray(powerUps, index);
             cannonID = setInterval(() => {
                 timer++;
 
                 if (timer === 20) {
                     clearInterval(cannonID);
-                    proRadius = 5;
+                    // proRadius = 5;
+                    changeProjectileRadius(5);
                     timer = 0;
-                    player.hasPowerUp = false;
+                    changePowerUpStatus(player, false);
                     powerUpDropped = false;
                 }
 
@@ -301,16 +282,13 @@ function animate() {
 //-------------------------------------------------------------------------------------------------------------------------
 
 function shootProjectile() {
-    //same calculations for enemy movement to follow player. but for projectiles they move towards the mouse click
-    // coordinates (clientY, clientX ) TODO: create getAngle function
     const angle = Math.atan2(event.clientY - player.y, event.clientX - player.x);
+    const color = 'red';
     let velocity = {
         x: Math.cos(angle) * 10,
         y: Math.sin(angle) * 10,
     };
-    projectiles.push(
-        new Projectile(player.x, player.y, proRadius, "red", velocity)
-    );
+    createProjectile(projectiles, player, proRadius, color, velocity);
 }
 
 function startGame() {
@@ -401,7 +379,7 @@ window.addEventListener("load", () => {
     });
 
     addEventListener("click", (event) => {
-        shootProjectile();
+        shootProjectile(event);
         //TODO: function to handle audio settings
         audio.currentTime = 0;
         audio.play();

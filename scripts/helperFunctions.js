@@ -56,6 +56,7 @@ function drawStats() {
     drawDifficulty();
     drawLives();
 }
+
 function createNewParticles(particles, projectile, enemy) {
     for (let i = 0; i < 8; i++) {
         particles.push(
@@ -172,4 +173,34 @@ function cleanUpOutOfBoundsProjectiles(projectilesArray, canvas) {
             });
         }
     });
+}
+
+function updateElements(eleArray) {
+    eleArray.forEach(ele => ele.update());
+}
+
+function changePlayerColor(player, color) {
+    player.color = color;
+}
+
+function addHealth(player) {
+    player.lives += 1;
+}
+
+function changePowerUpStatus(player, status) {
+    player.hasPowerUp = status;
+}
+
+function changePlayerSpeed(player, speed) {
+    player.velocity = speed;
+}
+
+function changeProjectileRadius(radius) {
+    proRadius = radius;
+}
+
+function createProjectile(projectileArray, player, projectileRadius, color, velocity) {
+    projectileArray.push(
+        new Projectile(player.x, player.y, projectileRadius, color, velocity)
+    );
 }

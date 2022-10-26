@@ -1,6 +1,6 @@
 //----------------- DOM RELATED -------------------------
 
-const canvas = document.querySelector("canvas");
+const canvas = document.querySelector("canvas")
 const ctx = canvas.getContext("2d");
 const strtBtn = document.querySelector(".strtBtn");
 const strtScreen = document.querySelector(".startGame");
@@ -34,6 +34,7 @@ let isDown = false;
 
 //TODO: figure what these two are
 let proRadius = 5;
+let proDamage = 1;
 let difficulty = 2;
 
 let animationID;
@@ -70,14 +71,14 @@ let projectiles = [];
 let enemies = [];
 let particles = [];
 let powerUps = [];
-let randomDrops = ["health", "speed", "cannon"];
+let randomDrops = ["cannon"];
 
 //---------------------------------------------------------------------------------
 
 function spawnEnemies() {
     enemiesID = setInterval(() => {
         //TODO: Why in the hell does this start with 0 instead of 1?
-        let health = 0;
+        let health = 1;
         let radius = getRandomNumber(40);
 
         if (radius < 10) {
@@ -85,7 +86,7 @@ function spawnEnemies() {
         }
 
         if (radius > 30) {
-            health = 1;
+            health = 2;
         }
 
         const [x, y] = getEnemyCoordinates(radius);
@@ -191,28 +192,53 @@ function animate() {
         projectiles.forEach((projectile, proIndex) => {
             const dist = getDistance(enemy, projectile);
             const projectileCollision = checkCollision(enemy, projectile, dist);
+            if (projectileCollision) {
+                enemy.takeDamage(proDamage)
+                console.log(enemy.health);
+                if (enemy.health >= 1) {
+                    shrinkEnemy(enemy)
+                    increasePlayerScore(20, player);
+                    deleteGameObjectFromArray(projectiles, proIndex);
+                    createNewParticles(particles, projectile, enemy);
+                } else {
 
-            if (projectileCollision && enemy.health === 0) {
-                let dropChance = getRandomNumber(10);
-                const powerUpStatus = checkPowerUpStatus(player);
+                    let dropChance = getRandomNumber(10);
+                    const powerUpStatus = checkPowerUpStatus(player);
 
-                if (dropChance === 5 && powerUpStatus === true) {
-                    dropPowerUp(projectile);
+                    if (dropChance === 5 && powerUpStatus === true) {
+                        dropPowerUp(projectile);
+                    }
+
+                    triggerExplosion(particles, projectile, enemy);
+                    setTimeout(() => {
+                        deleteGameObjectFromArray(enemies, index);
+                        deleteGameObjectFromArray(projectiles, proIndex);
+                        increasePlayerScore(10, player);
+                    }, 0);
+
                 }
 
-                triggerExplosion(particles, projectile, enemy);
-                setTimeout(() => {
-                    deleteGameObjectFromArray(enemies, index);
-                    deleteGameObjectFromArray(projectiles, proIndex);
-                    increasePlayerScore(10, player);
-                }, 0);
-
-            } else if (projectileCollision && enemy.health > 0) {
-                shrinkEnemy(enemy);
-                increasePlayerScore(20, player);
-                deleteGameObjectFromArray(projectiles, proIndex);
-                createNewParticles(particles, projectile, enemy);
             }
+
+            // if (projectileCollision && enemy.health <= 1) {
+            //     let dropChance = getRandomNumber(10);
+            //     const powerUpStatus = checkPowerUpStatus(player);
+            //
+            //     if (dropChance === 5 && powerUpStatus === true) {
+            //         dropPowerUp(projectile);
+            //     }
+            //
+            //     triggerExplosion(particles, projectile, enemy);
+            //     setTimeout(() => {
+            //         deleteGameObjectFromArray(enemies, index);
+            //         deleteGameObjectFromArray(projectiles, proIndex);
+            //         increasePlayerScore(10, player);
+            //     }, 0);
+            //
+            // }
+            // else if (projectileCollision && enemy.health > 1) {
+            //     shrinkEnemy(enemy);
+            // }
         });
     });
 
@@ -260,14 +286,14 @@ function animate() {
         } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'cannon') {
             changePowerUpStatus(player, true);
             changeProjectileRadius(30);
-            // proRadius = 30;
+            proDamage = 2;
             deleteGameObjectFromArray(powerUps, index);
             cannonID = setInterval(() => {
                 timer++;
 
                 if (timer === 20) {
                     clearInterval(cannonID);
-                    // proRadius = 5;
+                    proDamage = 1;
                     changeProjectileRadius(5);
                     timer = 0;
                     changePowerUpStatus(player, false);

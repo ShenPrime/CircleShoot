@@ -27,6 +27,10 @@ class Enemy {
       y: Math.sin(this.angle) * difficulty
     }
   }
+
+  takeDamage(damage) {
+    this.health -= damage;
+  }
 }
 
 

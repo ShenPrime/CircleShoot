@@ -71,7 +71,7 @@ function createNewParticles(particles, projectile, enemy) {
 
 function shrinkEnemy(enemy) {
     enemy.radius -= 20;
-    enemy.health -= 1;
+    // enemy.health -= 1;
 }
 
 function deleteGameObjectFromArray(array, index) {

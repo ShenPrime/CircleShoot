@@ -9,6 +9,9 @@ const restartBtn = document.querySelector(".restartBtn");
 const endScore = document.querySelector(".score");
 const pauseScreen = document.querySelector(".pause");
 const pauseScore = document.querySelector(".pauseScore");
+// const powerUpDiv = document.querySelector('.powerup');
+// const powerUpName = document.querySelector('.powerUpName')
+// const timerText = document.querySelector('.timer')
 canvas.height = innerHeight - 3;
 canvas.width = innerWidth;
 
@@ -50,6 +53,8 @@ let speedID = 0;
 let cannonID = 0;
 let healthID = 0;
 let damageID = 0;
+let tinyID = 0;
+let invincibleID = 0;
 let powerUpDropped = false;
 
 //TODO: find a place for me!
@@ -71,7 +76,8 @@ let projectiles = [];
 let enemies = [];
 let particles = [];
 let powerUps = [];
-let randomDrops = ["cannon"];
+let randomDrops = ['speed'];
+
 
 //---------------------------------------------------------------------------------
 
@@ -181,9 +187,13 @@ function animate() {
         const dist = getDistance(player, enemy);
         const collision = checkCollision(player, enemy, dist);
 
-        if (collision && player.lives <= 0) {
+        if (collision && player.isInvincible) {
+            handleInvincibleCollision(player, enemies, index, enemy);
+        }
+
+        if (collision && player.lives <= 0 && !player.isInvincible) {
             gameOver();
-        } else if (collision && player.lives > 0) {
+        } else if (collision && player.lives > 0 && !player.isInvincible) {
             setTimeout(() => {
                 handleCollision(player, enemies, timer, index, damageID);
             }, 0);
@@ -194,7 +204,6 @@ function animate() {
             const projectileCollision = checkCollision(enemy, projectile, dist);
             if (projectileCollision) {
                 enemy.takeDamage(proDamage)
-                console.log(enemy.health);
                 if (enemy.health >= 1) {
                     shrinkEnemy(enemy)
                     increasePlayerScore(20, player);
@@ -202,10 +211,11 @@ function animate() {
                     createNewParticles(particles, projectile, enemy);
                 } else {
 
-                    let dropChance = getRandomNumber(10);
+                    let dropChance = getRandomNumber(3);
                     const powerUpStatus = checkPowerUpStatus(player);
 
-                    if (dropChance === 5 && powerUpStatus === true) {
+
+                    if (dropChance === 1 && powerUpStatus === true) {
                         dropPowerUp(projectile);
                     }
 
@@ -219,26 +229,6 @@ function animate() {
                 }
 
             }
-
-            // if (projectileCollision && enemy.health <= 1) {
-            //     let dropChance = getRandomNumber(10);
-            //     const powerUpStatus = checkPowerUpStatus(player);
-            //
-            //     if (dropChance === 5 && powerUpStatus === true) {
-            //         dropPowerUp(projectile);
-            //     }
-            //
-            //     triggerExplosion(particles, projectile, enemy);
-            //     setTimeout(() => {
-            //         deleteGameObjectFromArray(enemies, index);
-            //         deleteGameObjectFromArray(projectiles, proIndex);
-            //         increasePlayerScore(10, player);
-            //     }, 0);
-            //
-            // }
-            // else if (projectileCollision && enemy.health > 1) {
-            //     shrinkEnemy(enemy);
-            // }
         });
     });
 
@@ -271,6 +261,7 @@ function animate() {
             deleteGameObjectFromArray(powerUps, index);
             speedID = setInterval(() => {
                 timer++;
+                // drawPowerUpText(drop.name, canvas, timer);
 
                 if (timer === 20) {
                     clearInterval(speedID);
@@ -301,9 +292,47 @@ function animate() {
                 }
 
             }, 1000);
+        } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'tiny') {
+            changePowerUpStatus(player, true);
+            player.setRadius(5);
+            deleteGameObjectFromArray(powerUps, index);
+            tinyID = setInterval(() => {
+                timer++;
+
+                if (timer === 10) {
+                    clearInterval(tinyID);
+                    player.setRadius(15);
+                    timer = 0;
+                    changePowerUpStatus(player, false);
+                    powerUpDropped = false;
+                }
+
+            }, 1000)
+        } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'invincible') {
+            //turn player multicolored
+            changePowerUpStatus(player, true);
+            player.setIsInvincible(true);
+            deleteGameObjectFromArray(powerUps, index);
+            let playerRandomColors = setInterval(() => {
+                player.setColor(`hsl(${Math.random() * 360}, 50%, 50%)`)
+            }, 50)
+            invincibleID = setInterval(() => {
+                timer++;
+
+                if (timer === 5) {
+                    clearInterval(playerRandomColors);
+                    clearInterval(invincibleID);
+                    player.setIsInvincible(false);
+                    player.setColor('white');
+                    timer = 0;
+                    changePowerUpStatus(player, false);
+                    powerUpDropped = false;
+                }
+            }, 1000);
         }
     });
 }
+
 
 //-------------------------------------------------------------------------------------------------------------------------
 

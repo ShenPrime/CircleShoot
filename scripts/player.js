@@ -1,4 +1,6 @@
 class Player {
+    isInvincible = false;
+
     constructor(x, y, radius = 15, color = 'white') {
         this.x = x;
         this.y = y;
@@ -16,5 +18,17 @@ class Player {
         ctx.fillStyle = this.color;
         ctx.fill();
         ctx.closePath();
+    }
+
+    setRadius(radius) {
+        this.radius = radius;
+    }
+
+    setIsInvincible(val) {
+        this.isInvincible = val;
+    }
+
+    setColor(color) {
+        this.color = color;
     }
 }

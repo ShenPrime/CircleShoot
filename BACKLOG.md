@@ -16,18 +16,22 @@
 
 ~~-Change Health to start at 1 instead of zero cause wtf - DONE~~
 
+~~-Powered up Projectiles should oneshot enemies - DONE~~
+
 -Test and refine dropchance till it feels fair
 1 in 10 feels okay. maybe 1 in 20 might be better
 
--Powered up Projectiles should oneshot enemies
+~~-Add powerup that makes player tiny - DONE~~
 
--Add powerup that makes player tiny
-
--invincibility powerup
+~~-invincibility powerup - DONE~~
 
 -rapid fire
 
--implement end game shop with ability to purchase permanent powerups
+-BOOMERANG BULLETS
+
+-Damage powerDOWN
+
+-implement end game shop with ability to purchase permanent passives
 
 -General renaming of variables
 
@@ -36,5 +40,6 @@
 -Restructure/reorganize code into better places
 (code relating to enemy should all be in inside enemy)
 
-
 -More stuff (power ups, enemy types...etc)
+
+-PowerUp that slows down player but gives them AOE damage bullets

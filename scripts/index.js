@@ -39,6 +39,7 @@ let isDown = false;
 let proRadius = 5;
 let proDamage = 1;
 let difficulty = 2;
+let rapidFire = false;
 
 let animationID;
 let isRunning = true;
@@ -76,7 +77,8 @@ let projectiles = [];
 let enemies = [];
 let particles = [];
 let powerUps = [];
-let randomDrops = ['speed'];
+let randomDrops = ['speed', 'tiny', 'health', 'cannon', 'invincible'];
+// let randomDrops = ['rapidFire'];
 
 
 //---------------------------------------------------------------------------------
@@ -330,6 +332,13 @@ function animate() {
                 }
             }, 1000);
         }
+        // } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'rapidFire') {
+        //     changePowerUpStatus(player, true);
+        //     //set rapidFire boolean to true
+        //     //start a timer for 10 seconds
+        //     //when timer reaches 10:
+        //     // reset powerups, timer, powerupDropped, clearInterval
+        // }
     });
 }
 

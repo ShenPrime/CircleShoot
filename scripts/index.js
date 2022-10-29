@@ -35,13 +35,13 @@ let isDown = false;
 
 // ------------------ misc variables ----------------------------
 
-//TODO: figure what these two are
 let proRadius = 5;
 let proDamage = 1;
 let difficulty = 2;
-let rapidFire = false;
-
+let rapidID = 0;
+let rapidFireID = 0;
 let animationID;
+let coordinates;
 let isRunning = true;
 
 // --------------------------------------------------------------
@@ -77,7 +77,7 @@ let projectiles = [];
 let enemies = [];
 let particles = [];
 let powerUps = [];
-let randomDrops = ['speed', 'tiny', 'health', 'cannon', 'invincible'];
+let randomDrops = ['speed', 'tiny', 'health', 'cannon', 'invincible', 'rapidFire'];
 // let randomDrops = ['rapidFire'];
 
 
@@ -85,7 +85,6 @@ let randomDrops = ['speed', 'tiny', 'health', 'cannon', 'invincible'];
 
 function spawnEnemies() {
     enemiesID = setInterval(() => {
-        //TODO: Why in the hell does this start with 0 instead of 1?
         let health = 1;
         let radius = getRandomNumber(40);
 
@@ -311,7 +310,6 @@ function animate() {
 
             }, 1000)
         } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'invincible') {
-            //turn player multicolored
             changePowerUpStatus(player, true);
             player.setIsInvincible(true);
             deleteGameObjectFromArray(powerUps, index);
@@ -331,21 +329,46 @@ function animate() {
                     powerUpDropped = false;
                 }
             }, 1000);
+        } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'rapidFire') {
+            changePowerUpStatus(player, true);
+            deleteGameObjectFromArray(powerUps, index);
+
+            window.addEventListener('mousemove', (event) => {
+                coordinates = {clientX: event.clientX, clientY: event.clientY};
+            })
+            window.addEventListener('mousedown', handleRapidFire);
+            window.addEventListener('mouseup', (event) => {
+                clearInterval(rapidID);
+            })
+
+            rapidFireID = setInterval(() => {
+                timer++;
+
+                if (timer === 10) {
+                    clearInterval(rapidFireID);
+                    changePowerUpStatus(player, false);
+                    powerUpDropped = false;
+                    timer = 0;
+                    window.removeEventListener('mousedown', handleRapidFire);
+                    clearInterval(rapidID);
+                }
+            }, 1000);
+
         }
-        // } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'rapidFire') {
-        //     changePowerUpStatus(player, true);
-        //     //set rapidFire boolean to true
-        //     //start a timer for 10 seconds
-        //     //when timer reaches 10:
-        //     // reset powerups, timer, powerupDropped, clearInterval
-        // }
     });
 }
 
+function handleRapidFire() {
+    rapidID = setInterval(() => {
+        shootProjectile(coordinates);
+        setAudio(audio);
+    }, 100);
+
+}
 
 //-------------------------------------------------------------------------------------------------------------------------
 
-function shootProjectile() {
+function shootProjectile(event) {
     const angle = Math.atan2(event.clientY - player.y, event.clientX - player.x);
     const color = 'red';
     let velocity = {
@@ -397,7 +420,7 @@ function pause() {
 
 }
 
-window.addEventListener("load", () => {
+window.addEventListener("load", (event) => {
     hideElements([canvas, gameOverScreen, pauseScreen]);
 
     restartBtn.addEventListener("click", () => {

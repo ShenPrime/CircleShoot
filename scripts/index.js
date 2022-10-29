@@ -78,10 +78,10 @@ let enemies = [];
 let particles = [];
 let powerUps = [];
 let randomDrops = ['speed', 'tiny', 'health', 'cannon', 'invincible', 'rapidFire'];
-// let randomDrops = ['rapidFire'];
+// let randomDrops = ['invincible'];
 
 
-//---------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
 
 function spawnEnemies() {
     enemiesID = setInterval(() => {
@@ -264,7 +264,7 @@ function animate() {
                 timer++;
                 // drawPowerUpText(drop.name, canvas, timer);
 
-                if (timer === 20) {
+                if (timer === 10) {
                     clearInterval(speedID);
                     changePlayerSpeed(player, 3);
                     timer = 0;
@@ -283,7 +283,7 @@ function animate() {
             cannonID = setInterval(() => {
                 timer++;
 
-                if (timer === 20) {
+                if (timer === 10) {
                     clearInterval(cannonID);
                     proDamage = 1;
                     changeProjectileRadius(5);

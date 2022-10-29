@@ -122,6 +122,11 @@ function triggerExplosion(particles, projectile, enemy) {
     }
 }
 
+function handleInvincibleCollision(player, enemies, index, enemy) {
+   deleteGameObjectFromArray(enemies, index);
+   triggerExplosion(particles, player, enemy);
+}
+
 function handleCollision(player, enemies, timer, index, damageID) {
     player.lives -= 1;
     enemies.splice(index, 1);

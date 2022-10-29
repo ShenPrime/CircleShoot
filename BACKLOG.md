@@ -12,6 +12,8 @@
 ~~-Universal function that takes in an object~~
 ~~and returns its position - DONE~~
 
+~~-General renaming of variables -DONE~~
+
 ~~-LINE 253 - Figure out why it doesn't work - DONE~~
 
 ~~-Change Health to start at 1 instead of zero cause wtf - DONE~~
@@ -25,7 +27,7 @@
 
 ~~-invincibility powerup - DONE~~
 
--rapid fire
+~~-rapid fire - DONE~~
 
 -BOOMERANG BULLETS
 
@@ -33,7 +35,6 @@
 
 -implement end game shop with ability to purchase permanent passives
 
--General renaming of variables
 
 -Rework the horrendous classes
 

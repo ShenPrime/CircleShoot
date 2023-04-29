@@ -1,5 +1,5 @@
 # CircleShoot
-A fast-pcaed horde shooter game 
+A fast-paced horde shooter game 
 
 
 <a href="https://adelalkhesh.github.io/CircleShoot/"> Demo the game</a>

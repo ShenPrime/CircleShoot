@@ -14,13 +14,13 @@ The mvp will be a game where the player can move in 4 different directions aroun
 <h2>Backlog</h2> 
 The list of nice to have backlog features will include:<br> 
 -Player rotation that follows mouse movement.<br> 
--Player health<br>
--Enemy health<br>
--Item pickups<br> 
--Health pickups<br> 
--Highscore<br> 
+-Player health ✅ <br>
+-Enemy health ✅<br>
+-Item pickups ✅<br> 
+-Health pickups ✅<br> 
+-Highscore ✅<br> 
 -randomly generated obstacles in levels<br> 
--music and sound effects<br> 
+-music and sound effects ✅<br> 
 
 
 <h2>Data Structres</h2> 

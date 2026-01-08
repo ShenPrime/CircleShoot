@@ -44,6 +44,17 @@
         <p class="score-label">FINAL SCORE</p>
         <p class="score-display"><span class="score">0</span></p>
 
+        <div class="stats-row">
+          <div class="stat-item">
+            <p class="stat-label">HIGHEST RANK</p>
+            <p class="stat-value highestRank">RECRUIT</p>
+          </div>
+          <div class="stat-item">
+            <p class="stat-label">BEST STREAK</p>
+            <p class="stat-value bestStreak">-</p>
+          </div>
+        </div>
+
         <button class="btn-primary restartBtn">↻ TRY AGAIN</button>
       </div>
     </div>
@@ -62,6 +73,20 @@
 
     <!-- Game Canvas -->
     <canvas></canvas>
+
+    <!-- Mobile Touch Controls -->
+    <div class="mobile-controls" id="mobileControls">
+      <div class="joystick-container" id="joystickContainer">
+        <div class="joystick-base" id="joystickBase">
+          <div class="joystick-thumb" id="joystickThumb"></div>
+        </div>
+      </div>
+      <div class="joystick-container aim-container" id="aimContainer">
+        <div class="joystick-base aim-base" id="aimBase">
+          <div class="joystick-thumb aim-thumb" id="aimThumb"></div>
+        </div>
+      </div>
+    </div>
 
     <!-- Load scripts in dependency order -->
     <script src="./scripts/utils.js"></script>

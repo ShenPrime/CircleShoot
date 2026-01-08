@@ -14,7 +14,9 @@ const createPlayer = (x, y, radius = 15, color = 'white') => ({
   hasPowerUp: false,
   isInvincible: false,
   noHitStreak: 0,         // Time in ms since last hit
-  streakTier: 0           // Current streak tier (0-6)
+  streakTier: 0,          // Current streak tier (0-7)
+  highestStreakTier: 0,   // Best streak tier reached this match
+  highestStreakTime: 0    // Best streak time reached this match (ms)
 });
 
 const createEnemy = (x, y, radius, color, velocity, health) => ({

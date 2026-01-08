@@ -222,13 +222,13 @@ const updateAllEntities = (state, canvas) => {
 
 // No-hit streak thresholds (in milliseconds) and titles
 const STREAK_THRESHOLDS = [
-  { time: 5000,  title: 'FOCUSED',    color: '#88ff88' },  // 5 seconds
-  { time: 10000, title: 'UNTOUCHED',  color: '#00ff88' },  // 10 seconds
-  { time: 20000, title: 'FLAWLESS',   color: '#00ffff' },  // 20 seconds
-  { time: 35000, title: 'GODLIKE',    color: '#ff00ff' },  // 35 seconds
-  { time: 55000, title: 'IMMORTAL',   color: '#ffaa00' },  // 55 seconds
-  { time: 80000, title: 'INVINCIBLE', color: '#ff0000' },  // 80 seconds
-  { time: 120000, title: 'LEGENDARY', color: '#ffffff' },  // 2 minutes
+  { time: 10000,  title: 'FOCUSED',    color: '#88ff88' },  // 10 seconds
+  { time: 20000,  title: 'UNTOUCHED',  color: '#00ff88' },  // 20 seconds
+  { time: 35000,  title: 'FLAWLESS',   color: '#00ffff' },  // 35 seconds
+  { time: 55000,  title: 'GODLIKE',    color: '#ff00ff' },  // 55 seconds
+  { time: 80000,  title: 'IMMORTAL',   color: '#ffaa00' },  // 1:20
+  { time: 110000, title: 'INVINCIBLE', color: '#ff0000' },  // 1:50
+  { time: 150000, title: 'LEGENDARY',  color: '#ffffff' },  // 2:30
 ];
 
 // Get streak tier (0 = no streak, 1-7 = streak tiers)
@@ -255,6 +255,10 @@ const updateStreak = (state, deltaTime) => {
   const newStreak = player.noHitStreak + deltaTime;
   const oldTier = player.streakTier;
   const newTier = getStreakTier(newStreak);
+
+  // Track highest streak achieved this match
+  const highestStreakTier = Math.max(player.highestStreakTier || 0, newTier);
+  const highestStreakTime = Math.max(player.highestStreakTime || 0, newStreak);
 
   // Check if reached new tier
   const tierReached = newTier > oldTier;
@@ -289,7 +293,9 @@ const updateStreak = (state, deltaTime) => {
     player: {
       ...player,
       noHitStreak: newStreak,
-      streakTier: newTier
+      streakTier: newTier,
+      highestStreakTier,
+      highestStreakTime
     },
     streakNotification: updatedNotification
   };
@@ -311,23 +317,23 @@ const getDifficultyForScore = (score) => {
   return baseDifficulty + Math.log10(score / scoreDivisor + 1) * scaleFactor;
 };
 
-// Score thresholds for ranks (faster progression than difficulty)
+// Score thresholds for ranks
 const RANK_THRESHOLDS = [
   0,      // Rank 1: RECRUIT
-  100,    // Rank 2: CADET
-  300,    // Rank 3: PILOT
-  600,    // Rank 4: WARRIOR
-  1000,   // Rank 5: VETERAN
-  1500,   // Rank 6: ELITE
-  2200,   // Rank 7: COMMANDER
-  3000,   // Rank 8: CAPTAIN
-  4000,   // Rank 9: ADMIRAL
-  5500,   // Rank 10: LEGEND
-  7500,   // Rank 11: COSMIC HERO
-  10000,  // Rank 12: STAR SLAYER
-  15000,  // Rank 13: VOID WALKER
-  25000,  // Rank 14: GALAXY GUARDIAN
-  40000,  // Rank 15: CELESTIAL
+  250,    // Rank 2: CADET
+  600,    // Rank 3: PILOT
+  1100,   // Rank 4: WARRIOR
+  1800,   // Rank 5: VETERAN
+  2800,   // Rank 6: ELITE
+  4000,   // Rank 7: COMMANDER
+  5500,   // Rank 8: CAPTAIN
+  7500,   // Rank 9: ADMIRAL
+  10000,  // Rank 10: LEGEND
+  14000,  // Rank 11: COSMIC HERO
+  20000,  // Rank 12: STAR SLAYER
+  30000,  // Rank 13: VOID WALKER
+  45000,  // Rank 14: GALAXY GUARDIAN
+  70000,  // Rank 15: CELESTIAL
 ];
 
 // Get rank (1-15+) based on score

@@ -13,6 +13,22 @@
   const endScore = document.querySelector('.score');
   const pauseScreen = document.querySelector('.pause');
   const pauseScore = document.querySelector('.pauseScore');
+  const highestRankEl = document.querySelector('.highestRank');
+  const bestStreakEl = document.querySelector('.bestStreak');
+
+  // Mobile touch control elements
+  const mobileControls = document.getElementById('mobileControls');
+  const joystickBase = document.getElementById('joystickBase');
+  const joystickThumb = document.getElementById('joystickThumb');
+  const aimBase = document.getElementById('aimBase');
+  const aimThumb = document.getElementById('aimThumb');
+
+  // Touch state tracking
+  let joystickTouchId = null;
+  let aimTouchId = null;
+  let isTouchDevice = false;
+  const fireRate = 250; // ms between shots
+  let aimDirection = { x: 1, y: 0 }; // Default aim direction (right)
 
   // Canvas setup
   canvas.height = innerHeight - 3;
@@ -50,11 +66,26 @@
     activeListeners.length = 0;
   };
 
-  // Rapid fire tracking
+  // Rapid fire tracking (for power-up)
   let rapidFireMousePos = { clientX: 0, clientY: 0 };
   let rapidFireMouseMoveHandler = null;
   let rapidFireMouseDownHandler = null;
   let rapidFireMouseUpHandler = null;
+
+  // Mouse hold-to-fire tracking
+  let mouseHoldInterval = null;
+  let mousePos = { clientX: 0, clientY: 0 };
+  let isMouseDown = false;
+
+  // Touch rapid fire tracking (defined early for use in handleGameOver)
+  let touchRapidFireInterval = null;
+
+  const stopTouchRapidFire = () => {
+    if (touchRapidFireInterval) {
+      clearInterval(touchRapidFireInterval);
+      touchRapidFireInterval = null;
+    }
+  };
 
   // Clear all game intervals
   const clearAllIntervals = () => {
@@ -77,6 +108,11 @@
       clearInterval(rapidFireInterval);
       rapidFireInterval = null;
     }
+    if (mouseHoldInterval) {
+      clearInterval(mouseHoldInterval);
+      mouseHoldInterval = null;
+    }
+    isMouseDown = false;
   };
 
   // Remove rapid fire listeners
@@ -220,6 +256,12 @@
       window.addEventListener('mousemove', rapidFireMouseMoveHandler);
       window.addEventListener('mousedown', rapidFireMouseDownHandler);
       window.addEventListener('mouseup', rapidFireMouseUpHandler);
+
+      // If mouse is already held down, start rapid fire immediately
+      if (isMouseDown) {
+        rapidFireMousePos = mousePos;
+        rapidFireMouseDownHandler();
+      }
     }
 
     // Schedule this power-up's removal
@@ -254,11 +296,28 @@
     cancelAnimationFrame(animationId);
     clearAllIntervals();
     removeRapidFireListeners();
+    stopTouchRapidFire();
     stopBackgroundMusic();
 
     hideElements([canvas]);
+    hideMobileControls();
     showElements([gameOverScreen]);
     setElementText(endScore, gameState.player.score);
+
+    // Display highest rank reached
+    const rankTitle = getRankTitle(gameState.player.rank || 1);
+    setElementText(highestRankEl, rankTitle);
+
+    // Display best streak
+    const highestTier = gameState.player.highestStreakTier || 0;
+    const highestTime = gameState.player.highestStreakTime || 0;
+    if (highestTier > 0) {
+      const streakTitle = getStreakTitle(highestTier);
+      const seconds = Math.floor(highestTime / 1000);
+      setElementText(bestStreakEl, `${streakTitle} (${seconds}s)`);
+    } else {
+      setElementText(bestStreakEl, '-');
+    }
 
     gameState = null;
   };
@@ -373,6 +432,11 @@
     hideElements([startBtn, startScreen, gameOverScreen, pauseScreen]);
     showElements([canvas]);
 
+    // Show mobile controls on touch devices
+    if (isTouchDevice) {
+      showMobileControls();
+    }
+
     frameCount = 0;
     lastFrameTime = 0;
     gameState = createInitialState(canvas);
@@ -390,9 +454,11 @@
     cancelAnimationFrame(animationId);
     clearInterval(enemySpawnInterval);
     enemySpawnInterval = null;
+    stopTouchRapidFire();
     backgroundAudio.pause();
 
     hideElements([canvas]);
+    hideMobileControls();
     showElements([pauseScreen]);
     setElementText(pauseScore, gameState.player.score);
   };
@@ -404,6 +470,11 @@
     gameState = updateFlagsInState(gameState, { isRunning: true });
     showElements([canvas]);
     hideElements([pauseScreen]);
+
+    // Show mobile controls on touch devices
+    if (isTouchDevice) {
+      showMobileControls();
+    }
 
     lastFrameTime = 0;
     startEnemySpawner();
@@ -453,26 +524,299 @@
   };
 
   const handleClick = (event) => {
+    // Click is now handled by mousedown/mouseup for hold-to-fire
+    // This is kept for single clicks that don't trigger hold
+  };
+
+  // Mouse hold-to-fire handlers
+  const handleMouseDown = (event) => {
     // Don't shoot on UI button clicks
     if (event.target.tagName === 'BUTTON') return;
+    // Don't shoot on mobile control touches (handled separately)
+    if (isTouchDevice && event.target.closest('.mobile-controls')) return;
     if (!gameState || !gameState.flags.isRunning) return;
 
-    shootProjectile(event);
+    isMouseDown = true;
+    mousePos = { clientX: event.clientX, clientY: event.clientY };
+
+    // Fire immediately
+    shootProjectile(mousePos);
+
+    // Start auto-fire interval
+    if (!mouseHoldInterval) {
+      mouseHoldInterval = setInterval(() => {
+        if (isMouseDown && gameState && gameState.flags.isRunning) {
+          shootProjectile(mousePos);
+        }
+      }, fireRate);
+    }
+  };
+
+  const handleMouseUp = () => {
+    isMouseDown = false;
+    if (mouseHoldInterval) {
+      clearInterval(mouseHoldInterval);
+      mouseHoldInterval = null;
+    }
+  };
+
+  const handleMouseMove = (event) => {
+    if (isMouseDown) {
+      mousePos = { clientX: event.clientX, clientY: event.clientY };
+    }
+  };
+
+  // Mobile touch detection
+  const detectTouchDevice = () => {
+    return ('ontouchstart' in window) || 
+           (navigator.maxTouchPoints > 0) || 
+           (window.matchMedia('(pointer: coarse)').matches);
+  };
+
+  // Show/hide mobile controls
+  const showMobileControls = () => {
+    if (mobileControls) {
+      mobileControls.classList.add('active');
+    }
+  };
+
+  const hideMobileControls = () => {
+    if (mobileControls) {
+      mobileControls.classList.remove('active');
+    }
+  };
+
+  // Joystick touch handlers
+  const handleJoystickStart = (event) => {
+    event.preventDefault();
+    if (joystickTouchId !== null) return;
+
+    const touch = event.changedTouches[0];
+    joystickTouchId = touch.identifier;
+    updateJoystickPosition(touch);
+  };
+
+  const handleJoystickMove = (event) => {
+    event.preventDefault();
+    if (joystickTouchId === null) return;
+
+    for (const touch of event.changedTouches) {
+      if (touch.identifier === joystickTouchId) {
+        updateJoystickPosition(touch);
+        break;
+      }
+    }
+  };
+
+  const handleJoystickEnd = (event) => {
+    event.preventDefault();
+    for (const touch of event.changedTouches) {
+      if (touch.identifier === joystickTouchId) {
+        joystickTouchId = null;
+        resetJoystick();
+        break;
+      }
+    }
+  };
+
+  const updateJoystickPosition = (touch) => {
+    if (!joystickBase || !joystickThumb || !gameState) return;
+
+    const rect = joystickBase.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    let deltaX = touch.clientX - centerX;
+    let deltaY = touch.clientY - centerY;
+
+    // Limit to joystick radius
+    const maxRadius = rect.width / 2 - 25; // Account for thumb size
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    if (distance > maxRadius) {
+      deltaX = (deltaX / distance) * maxRadius;
+      deltaY = (deltaY / distance) * maxRadius;
+    }
+
+    // Move thumb visually
+    joystickThumb.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+
+    // Calculate normalized direction (-1 to 1)
+    const normalizedX = deltaX / maxRadius;
+    const normalizedY = deltaY / maxRadius;
+
+    // Update game input based on joystick position (threshold of 0.3)
+    const threshold = 0.3;
+    gameState = updateInputInState(gameState, {
+      left: normalizedX < -threshold,
+      right: normalizedX > threshold,
+      up: normalizedY < -threshold,
+      down: normalizedY > threshold
+    });
+  };
+
+  const resetJoystick = () => {
+    if (joystickThumb) {
+      joystickThumb.style.transform = 'translate(0, 0)';
+    }
+    if (gameState) {
+      gameState = updateInputInState(gameState, {
+        left: false,
+        right: false,
+        up: false,
+        down: false
+      });
+    }
+  };
+
+  // Aim joystick touch handlers
+  const handleAimStart = (event) => {
+    event.preventDefault();
+    if (aimTouchId !== null) return;
+
+    const touch = event.changedTouches[0];
+    aimTouchId = touch.identifier;
+    updateAimPosition(touch);
+    startTouchRapidFire();
+  };
+
+  const handleAimMove = (event) => {
+    event.preventDefault();
+    if (aimTouchId === null) return;
+
+    for (const touch of event.changedTouches) {
+      if (touch.identifier === aimTouchId) {
+        updateAimPosition(touch);
+        break;
+      }
+    }
+  };
+
+  const handleAimEnd = (event) => {
+    event.preventDefault();
+    for (const touch of event.changedTouches) {
+      if (touch.identifier === aimTouchId) {
+        aimTouchId = null;
+        resetAimJoystick();
+        stopTouchRapidFire();
+        break;
+      }
+    }
+  };
+
+  const updateAimPosition = (touch) => {
+    if (!aimBase || !aimThumb || !gameState) return;
+
+    const rect = aimBase.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    let deltaX = touch.clientX - centerX;
+    let deltaY = touch.clientY - centerY;
+
+    // Limit to joystick radius
+    const maxRadius = rect.width / 2 - 25;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    if (distance > maxRadius) {
+      deltaX = (deltaX / distance) * maxRadius;
+      deltaY = (deltaY / distance) * maxRadius;
+    }
+
+    // Move thumb visually
+    aimThumb.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+
+    // Store aim direction (normalized)
+    if (distance > 10) { // Dead zone
+      aimDirection = {
+        x: deltaX / distance,
+        y: deltaY / distance
+      };
+    }
+  };
+
+  const resetAimJoystick = () => {
+    if (aimThumb) {
+      aimThumb.style.transform = 'translate(0, 0)';
+    }
+  };
+
+  const startTouchRapidFire = () => {
+    if (touchRapidFireInterval) return;
+    // Fire immediately
+    fireInAimDirection();
+    // Then continue firing
+    touchRapidFireInterval = setInterval(() => {
+      fireInAimDirection();
+    }, fireRate);
+  };
+
+  const fireInAimDirection = () => {
+    if (!gameState || !gameState.flags.isRunning) return;
+
+    // Calculate target position based on aim direction
+    const targetX = gameState.player.x + aimDirection.x * 500;
+    const targetY = gameState.player.y + aimDirection.y * 500;
+
+    shootProjectile({ clientX: targetX, clientY: targetY });
+  };
+
+  // Setup mobile touch listeners
+  const setupMobileControls = () => {
+    if (!joystickBase || !aimBase) return;
+
+    // Movement joystick events
+    joystickBase.addEventListener('touchstart', handleJoystickStart, { passive: false });
+    joystickBase.addEventListener('touchmove', handleJoystickMove, { passive: false });
+    joystickBase.addEventListener('touchend', handleJoystickEnd, { passive: false });
+    joystickBase.addEventListener('touchcancel', handleJoystickEnd, { passive: false });
+
+    // Aim joystick events
+    aimBase.addEventListener('touchstart', handleAimStart, { passive: false });
+    aimBase.addEventListener('touchmove', handleAimMove, { passive: false });
+    aimBase.addEventListener('touchend', handleAimEnd, { passive: false });
+    aimBase.addEventListener('touchcancel', handleAimEnd, { passive: false });
+
+    // Prevent default touch behaviors on canvas during game
+    canvas.addEventListener('touchstart', (e) => {
+      if (gameState && gameState.flags.isRunning) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  };
+
+  // Prevent scrolling/zooming during gameplay
+  const preventDefaultTouchBehaviors = () => {
+    document.addEventListener('touchmove', (e) => {
+      if (gameState && gameState.flags.isRunning) {
+        e.preventDefault();
+      }
+    }, { passive: false });
   };
 
   // Initialize on window load
   window.addEventListener('load', () => {
     hideElements([canvas, gameOverScreen, pauseScreen]);
+    hideMobileControls();
+
+    // Detect touch device
+    isTouchDevice = detectTouchDevice();
 
     // Button listeners
     startBtn.addEventListener('click', startGame);
     restartBtn.addEventListener('click', startGame);
 
     // Game input listeners
-    addTrackedListener(window, 'click', handleClick);
+    addTrackedListener(window, 'mousedown', handleMouseDown);
+    addTrackedListener(window, 'mouseup', handleMouseUp);
+    addTrackedListener(window, 'mousemove', handleMouseMove);
     addTrackedListener(window, 'keydown', handleKeyDown);
     addTrackedListener(window, 'keyup', handleKeyUp);
     addTrackedListener(window, 'keypress', handleKeyPress);
+
+    // Setup mobile controls
+    setupMobileControls();
+    preventDefaultTouchBehaviors();
 
     // Handle window resize
     window.addEventListener('resize', () => {

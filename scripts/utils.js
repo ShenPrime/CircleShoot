@@ -41,3 +41,22 @@ const showElements = (elements) => {
 const setElementText = (element, text) => {
   element.innerText = text;
 };
+
+// Get rank title for game over screen (uses LEVEL_TITLES from rendering.js)
+const getRankTitle = (rank) => {
+  // LEVEL_TITLES is defined in rendering.js which loads before this
+  if (typeof LEVEL_TITLES !== 'undefined') {
+    const index = Math.min(rank - 1, LEVEL_TITLES.length - 1);
+    return LEVEL_TITLES[Math.max(0, index)];
+  }
+  return 'RECRUIT';
+};
+
+// Get streak title for game over screen (uses STREAK_TITLES from rendering.js)
+const getStreakTitle = (tier) => {
+  // STREAK_TITLES is defined in rendering.js which loads before this
+  if (typeof STREAK_TITLES !== 'undefined' && tier > 0 && tier < STREAK_TITLES.length) {
+    return STREAK_TITLES[tier];
+  }
+  return null;
+};

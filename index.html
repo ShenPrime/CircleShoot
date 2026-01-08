@@ -32,18 +32,20 @@
     </div>
 
 
-    <div class='pause'> 
+    <div class='pause'>
       <h1>GAME PAUSED</h1>
       <h2>Your score is: <span class="pauseScore">0</span></h2>
       <h3>Press 'Z' to unpause!</h3>
     </div>
     <canvas></canvas>
-    <script src="./scripts/player.js"></script>
-    <script src="./scripts/enemies.js"></script>
-    <script src="./scripts/randomdrops.js"></script>
-    <script src="./scripts/projectile.js"></script>
-    <script src="./scripts/particles.js"></script>
-    <script src="./scripts/helperFunctions.js"></script>
+
+    <!-- Load scripts in dependency order -->
+    <script src="./scripts/utils.js"></script>
+    <script src="./scripts/entities.js"></script>
+    <script src="./scripts/collision.js"></script>
+    <script src="./scripts/rendering.js"></script>
+    <script src="./scripts/powerups.js"></script>
+    <script src="./scripts/state.js"></script>
     <script src="./scripts/index.js"></script>
   </body>
 </html>

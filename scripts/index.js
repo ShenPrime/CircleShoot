@@ -1,504 +1,415 @@
-//----------------- DOM RELATED -------------------------
+// Main game entry point and orchestration
 
-const canvas = document.querySelector("canvas")
-const ctx = canvas.getContext("2d");
-const strtBtn = document.querySelector(".strtBtn");
-const strtScreen = document.querySelector(".startGame");
-const gameOverScreen = document.querySelector(".gameOver");
-const restartBtn = document.querySelector(".restartBtn");
-const endScore = document.querySelector(".score");
-const pauseScreen = document.querySelector(".pause");
-const pauseScore = document.querySelector(".pauseScore");
-// const powerUpDiv = document.querySelector('.powerup');
-// const powerUpName = document.querySelector('.powerUpName')
-// const timerText = document.querySelector('.timer')
-canvas.height = innerHeight - 3;
-canvas.width = innerWidth;
+(function() {
+  'use strict';
 
-//-------------------------------------------------------
+  // DOM Elements
+  const canvas = document.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  const startBtn = document.querySelector('.strtBtn');
+  const startScreen = document.querySelector('.startGame');
+  const gameOverScreen = document.querySelector('.gameOver');
+  const restartBtn = document.querySelector('.restartBtn');
+  const endScore = document.querySelector('.score');
+  const pauseScreen = document.querySelector('.pause');
+  const pauseScore = document.querySelector('.pauseScore');
 
-// ---------------------- AUDIO -------------------------
+  // Canvas setup
+  canvas.height = innerHeight - 3;
+  canvas.width = innerWidth;
 
-let audio = new Audio("./audio/Sub - Mini Impact-[AudioTrimmer.com] (1).wav");
-let backgroundAudio = new Audio("./audio/Sweet baby kicks PSG.mp3");
+  // Audio
+  const shootAudio = new Audio('./audio/Sub - Mini Impact-[AudioTrimmer.com] (1).wav');
+  const backgroundAudio = new Audio('./audio/Sweet baby kicks PSG.mp3');
 
-//-------------------------------------------------------------------------
+  // Game state
+  let gameState = null;
+  let animationId = null;
+  let frameCount = 0;
 
-// ------------- Variables for collision and movement -------//
+  // Interval tracking for cleanup
+  let enemySpawnInterval = null;
+  let powerUpTimeout = null;
+  let colorCycleInterval = null;
+  let damageTimeout = null;
+  let rapidFireInterval = null;
 
-let isLeft = false;
-let isRight = false;
-let isUp = false;
-let isDown = false;
+  // Event listener tracking for cleanup
+  const activeListeners = [];
 
-// -------------------------------------------------------------
+  const addTrackedListener = (element, event, handler) => {
+    element.addEventListener(event, handler);
+    activeListeners.push({ element, event, handler });
+  };
 
-// ------------------ misc variables ----------------------------
+  const removeAllTrackedListeners = () => {
+    activeListeners.forEach(({ element, event, handler }) => {
+      element.removeEventListener(event, handler);
+    });
+    activeListeners.length = 0;
+  };
 
-let proRadius = 5;
-let proDamage = 1;
-let difficulty = 2;
-let rapidID = 0;
-let rapidFireID = 0;
-let animationID;
-let coordinates;
-let isRunning = true;
+  // Rapid fire tracking
+  let rapidFireMousePos = { clientX: 0, clientY: 0 };
+  let rapidFireMouseMoveHandler = null;
+  let rapidFireMouseDownHandler = null;
+  let rapidFireMouseUpHandler = null;
 
-// --------------------------------------------------------------
-
-//----------------------- Power Up variables---------------------
-
-let timer = 0;
-let timer2 = 0;
-let speedID = 0;
-let cannonID = 0;
-let healthID = 0;
-let damageID = 0;
-let tinyID = 0;
-let invincibleID = 0;
-let powerUpDropped = false;
-
-//TODO: find a place for me!
-let enemiesID = 0;
-
-//---------------------------------------------------------------
-
-// ------------------ Player Spawn and coordinates ------------------------
-
-let x = canvas.width / 2;
-let y = canvas.height / 2;
-let player = new Player(x, y, 15, "white");
-
-//-------------------------------------------------------------------------
-
-//------------------------ Arrays for spawning game objects ---------------------
-
-let projectiles = [];
-let enemies = [];
-let particles = [];
-let powerUps = [];
-let randomDrops = ['speed', 'tiny', 'health', 'cannon', 'invincible', 'rapidFire'];
-// let randomDrops = ['invincible'];
-
-
-//--------------------------------------------------------------------------------
-
-function spawnEnemies() {
-    enemiesID = setInterval(() => {
-        let health = 1;
-        let radius = getRandomNumber(40);
-
-        if (radius < 10) {
-            radius += 10;
-        }
-
-        if (radius > 30) {
-            health = 2;
-        }
-
-        const [x, y] = getEnemyCoordinates(radius);
-        const color = getRandomColor();
-        const angle = getAngle(player, x, y);
-        let velocity = getVelocity(x, y, angle, difficulty);
-        createEnemy(enemies, x, y, radius, color, velocity, health);
-
-    }, 600);
-}
-
-//TODO: Figure out a proper formula for difficulty
-function increaseDifficulty() {
-    if (player.score > 500 && player.score < 1000 && difficulty < 2.5) {
-        difficulty += 0.5;
+  // Clear all game intervals
+  const clearAllIntervals = () => {
+    if (enemySpawnInterval) {
+      clearInterval(enemySpawnInterval);
+      enemySpawnInterval = null;
     }
-
-    if (player.score > 1000 && player.score < 1500 && difficulty < 3) {
-        difficulty += 0.5;
+    if (powerUpTimeout) {
+      clearTimeout(powerUpTimeout);
+      powerUpTimeout = null;
     }
-
-    if (player.score > 1500 && player.score < 2500 && difficulty < 4) {
-        difficulty++;
+    if (colorCycleInterval) {
+      clearInterval(colorCycleInterval);
+      colorCycleInterval = null;
     }
-
-    if (player.score > 2500 && player.score < 3000 && difficulty < 5) {
-        difficulty++;
+    if (damageTimeout) {
+      clearTimeout(damageTimeout);
+      damageTimeout = null;
     }
-
-    if (player.score > 3000 && player.score < 5000 && difficulty < 7) {
-        difficulty += 2;
+    if (rapidFireInterval) {
+      clearInterval(rapidFireInterval);
+      rapidFireInterval = null;
     }
-}
+  };
 
-function playerMovement() {
-    if (isRight && player.x + player.radius < canvas.width) {
-        player.x += player.velocity;
+  // Remove rapid fire listeners
+  const removeRapidFireListeners = () => {
+    if (rapidFireMouseMoveHandler) {
+      window.removeEventListener('mousemove', rapidFireMouseMoveHandler);
+      rapidFireMouseMoveHandler = null;
     }
-
-    if (isLeft && player.x - player.radius > 0) {
-        player.x -= player.velocity;
+    if (rapidFireMouseDownHandler) {
+      window.removeEventListener('mousedown', rapidFireMouseDownHandler);
+      rapidFireMouseDownHandler = null;
     }
-
-    if (isUp && player.y - player.radius > 0) {
-        player.y -= player.velocity;
+    if (rapidFireMouseUpHandler) {
+      window.removeEventListener('mouseup', rapidFireMouseUpHandler);
+      rapidFireMouseUpHandler = null;
     }
+  };
 
-    if (isDown && player.y + player.radius < canvas.height) {
-        player.y += player.velocity;
-    }
-}
+  // Audio helpers
+  const playShootSound = () => {
+    shootAudio.currentTime = 0;
+    shootAudio.volume = 0.1;
+    shootAudio.play().catch(() => {});
+  };
 
-//--------------------------------- MAIN GAME LOOP AND ANIMATION
-// ----------------------------------------------------------
-
-function animate() {
-    //TODO: Investigate this
-    backgroundAudio.play();
+  const startBackgroundMusic = () => {
     backgroundAudio.volume = 0.1;
+    backgroundAudio.loop = true;
+    backgroundAudio.play().catch(() => {});
+  };
 
-    //---------------------------------
-    animationID = requestAnimationFrame(animate);
-    //--------------- blur effect ------------
+  const stopBackgroundMusic = () => {
+    backgroundAudio.pause();
+    backgroundAudio.currentTime = 0;
+  };
 
-    ctx.fillStyle = "rgba(0,0,0,0.3";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Spawn enemies at intervals
+  const startEnemySpawner = () => {
+    enemySpawnInterval = setInterval(() => {
+      if (!gameState || !gameState.flags.isRunning) return;
 
-    //------------------------------------------
-    //-------------game object draw functions -----------
+      let radius = getRandomNumber(40);
+      if (radius < 10) radius += 10;
 
-    player.drawPlayer();
-    drawStats(); //Draw difficulty, lives, score
-    increaseDifficulty();
-    playerMovement();
+      const health = radius > 30 ? 2 : 1;
+      const spawnPos = getEnemySpawnPosition(canvas, radius);
+      const color = getRandomColor();
+      const angle = getAngle(gameState.player, spawnPos.x, spawnPos.y);
+      const velocity = getVelocity(angle, gameState.settings.difficulty);
 
-    //------------------------------------------------------
+      const enemy = createEnemy(
+        spawnPos.x,
+        spawnPos.y,
+        radius,
+        color,
+        velocity,
+        health
+      );
 
-    updateElements(powerUps);
-    updateElements(projectiles);
+      gameState = addEnemyToState(gameState, enemy);
+    }, 600);
+  };
 
-    particles.forEach((particle, index) => {
-        if (particle.alpha <= 0) {
-            deleteGameObjectFromArray(particles, index);
-        } else {
-            particle.update();
-        }
-    });
+  // Shoot projectile toward mouse position
+  const shootProjectile = (event) => {
+    if (!gameState || !gameState.flags.isRunning) return;
 
-    enemies.forEach((enemy, index) => {
-        enemy.update();
-
-        const dist = getDistance(player, enemy);
-        const collision = checkCollision(player, enemy, dist);
-
-        if (collision && player.isInvincible) {
-            handleInvincibleCollision(player, enemies, index, enemy);
-        }
-
-        if (collision && player.lives <= 0 && !player.isInvincible) {
-            gameOver();
-        } else if (collision && player.lives > 0 && !player.isInvincible) {
-            setTimeout(() => {
-                handleCollision(player, enemies, timer, index, damageID);
-            }, 0);
-        }
-
-        projectiles.forEach((projectile, proIndex) => {
-            const dist = getDistance(enemy, projectile);
-            const projectileCollision = checkCollision(enemy, projectile, dist);
-            if (projectileCollision) {
-                enemy.takeDamage(proDamage)
-                if (enemy.health >= 1) {
-                    shrinkEnemy(enemy)
-                    increasePlayerScore(20, player);
-                    deleteGameObjectFromArray(projectiles, proIndex);
-                    createNewParticles(particles, projectile, enemy);
-                } else {
-
-                    let dropChance = getRandomNumber(3);
-                    const powerUpStatus = checkPowerUpStatus(player);
-
-
-                    if (dropChance === 1 && powerUpStatus === true) {
-                        dropPowerUp(projectile);
-                    }
-
-                    triggerExplosion(particles, projectile, enemy);
-                    setTimeout(() => {
-                        deleteGameObjectFromArray(enemies, index);
-                        deleteGameObjectFromArray(projectiles, proIndex);
-                        increasePlayerScore(10, player);
-                    }, 0);
-
-                }
-
-            }
-        });
-    });
-
-    cleanUpOutOfBoundsProjectiles(projectiles, canvas);
-
-    powerUps.forEach((drop, index) => {
-        let powerUpDist = getDistance(player, drop);
-
-        if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'health') {
-            addHealth(player);
-            changePlayerColor(player, 'green');
-            deleteGameObjectFromArray(powerUps, index);
-            healthID = setInterval(() => {
-                timer++;
-
-                if (timer === 3) {
-                    clearInterval(healthID);
-                    changePlayerColor(player, 'white');
-                    timer = 0;
-                    changePowerUpStatus(player, false);
-                    powerUpDropped = false;
-                }
-
-            }, 100);
-
-        } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'speed') {
-            //the speed drop sets the move speed to 6 for 20 seconds
-            changePowerUpStatus(player, true);
-            changePlayerSpeed(player, 6);
-            deleteGameObjectFromArray(powerUps, index);
-            speedID = setInterval(() => {
-                timer++;
-                // drawPowerUpText(drop.name, canvas, timer);
-
-                if (timer === 10) {
-                    clearInterval(speedID);
-                    changePlayerSpeed(player, 3);
-                    timer = 0;
-                    changePowerUpStatus(player, false);
-                    powerUpDropped = false;
-                }
-
-            }, 1000);
-
-
-        } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'cannon') {
-            changePowerUpStatus(player, true);
-            changeProjectileRadius(30);
-            proDamage = 2;
-            deleteGameObjectFromArray(powerUps, index);
-            cannonID = setInterval(() => {
-                timer++;
-
-                if (timer === 10) {
-                    clearInterval(cannonID);
-                    proDamage = 1;
-                    changeProjectileRadius(5);
-                    timer = 0;
-                    changePowerUpStatus(player, false);
-                    powerUpDropped = false;
-                }
-
-            }, 1000);
-        } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'tiny') {
-            changePowerUpStatus(player, true);
-            player.setRadius(5);
-            deleteGameObjectFromArray(powerUps, index);
-            tinyID = setInterval(() => {
-                timer++;
-
-                if (timer === 10) {
-                    clearInterval(tinyID);
-                    player.setRadius(15);
-                    timer = 0;
-                    changePowerUpStatus(player, false);
-                    powerUpDropped = false;
-                }
-
-            }, 1000)
-        } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'invincible') {
-            changePowerUpStatus(player, true);
-            player.setIsInvincible(true);
-            deleteGameObjectFromArray(powerUps, index);
-            let playerRandomColors = setInterval(() => {
-                player.setColor(`hsl(${Math.random() * 360}, 50%, 50%)`)
-            }, 50)
-            invincibleID = setInterval(() => {
-                timer++;
-
-                if (timer === 5) {
-                    clearInterval(playerRandomColors);
-                    clearInterval(invincibleID);
-                    player.setIsInvincible(false);
-                    player.setColor('white');
-                    timer = 0;
-                    changePowerUpStatus(player, false);
-                    powerUpDropped = false;
-                }
-            }, 1000);
-        } else if (powerUpDist - drop.radius - player.radius < 1 && drop.name === 'rapidFire') {
-            changePowerUpStatus(player, true);
-            deleteGameObjectFromArray(powerUps, index);
-
-            window.addEventListener('mousemove', (event) => {
-                coordinates = {clientX: event.clientX, clientY: event.clientY};
-            })
-            window.addEventListener('mousedown', handleRapidFire);
-            window.addEventListener('mouseup', (event) => {
-                clearInterval(rapidID);
-            })
-
-            rapidFireID = setInterval(() => {
-                timer++;
-
-                if (timer === 10) {
-                    clearInterval(rapidFireID);
-                    changePowerUpStatus(player, false);
-                    powerUpDropped = false;
-                    timer = 0;
-                    window.removeEventListener('mousedown', handleRapidFire);
-                    clearInterval(rapidID);
-                }
-            }, 1000);
-
-        }
-    });
-}
-
-function handleRapidFire() {
-    rapidID = setInterval(() => {
-        shootProjectile(coordinates);
-        setAudio(audio);
-    }, 100);
-
-}
-
-//-------------------------------------------------------------------------------------------------------------------------
-
-function shootProjectile(event) {
-    const angle = Math.atan2(event.clientY - player.y, event.clientX - player.x);
-    const color = 'red';
-    let velocity = {
-        x: Math.cos(angle) * 10,
-        y: Math.sin(angle) * 10,
+    const angle = Math.atan2(
+      event.clientY - gameState.player.y,
+      event.clientX - gameState.player.x
+    );
+    const velocity = {
+      x: Math.cos(angle) * 10,
+      y: Math.sin(angle) * 10
     };
-    createProjectile(projectiles, player, proRadius, color, velocity);
-}
 
-function startGame() {
-    hideElements([strtBtn, strtScreen, gameOverScreen, pauseScreen]);
-    revealElements([canvas]);
-    animate();
-    spawnEnemies();
+    const projectile = createProjectile(
+      gameState.player.x,
+      gameState.player.y,
+      gameState.settings.projectileRadius,
+      'red',
+      velocity
+    );
 
-    //TODO: rename this to something more clear
-    increaseDifficulty();
-}
+    gameState = addProjectileToState(gameState, projectile);
+    playShootSound();
+  };
 
-function gameOver() {
-    cancelAnimationFrame(animationID);
-    stopIntervals([enemiesID, cannonID, speedID, healthID, damageID]);
-    stopAudio(backgroundAudio);
-    hideElements([canvas]);
-    revealElements([gameOverScreen]);
-    changeElementInnerText(endScore, player.score);
-    resetArrays([projectiles, enemies, particles, powerUps]); //TODO: fix visual bug related to this
-    resetTimers([timer, timer2]);
-    player = createNewPlayer(canvas);
-    powerUpDropped = false;
-    difficulty = 2;
-    proRadius = 5;
-}
-
-function pause() {
-    isRunning = !isRunning;
-
-    if (isRunning) {
-        animate();
-
-    } else {
-        cancelAnimationFrame(animationID);
-        clearInterval(enemiesID);
-        backgroundAudio.pause();
-        hideElements([canvas]);
-        revealElements([pauseScreen]);
-        changeElementInnerText(pauseScore, player.score);
+  // Schedule power-up removal
+  const schedulePowerUpRemoval = (name, duration, removeFunc) => {
+    // Clear any existing power-up timeout
+    if (powerUpTimeout) {
+      clearTimeout(powerUpTimeout);
     }
 
-}
+    // Handle invincible color cycling
+    if (name === 'invincible') {
+      colorCycleInterval = setInterval(() => {
+        if (gameState && gameState.player.isInvincible) {
+          const hue = Math.random() * 360;
+          gameState = updatePlayerInState(gameState, {
+            color: `hsl(${hue}, 50%, 50%)`
+          });
+        }
+      }, 50);
+    }
 
-window.addEventListener("load", (event) => {
+    // Handle rapid fire listeners
+    if (name === 'rapidFire') {
+      rapidFireMouseMoveHandler = (event) => {
+        rapidFireMousePos = { clientX: event.clientX, clientY: event.clientY };
+      };
+      rapidFireMouseDownHandler = () => {
+        rapidFireInterval = setInterval(() => {
+          shootProjectile(rapidFireMousePos);
+        }, 100);
+      };
+      rapidFireMouseUpHandler = () => {
+        if (rapidFireInterval) {
+          clearInterval(rapidFireInterval);
+          rapidFireInterval = null;
+        }
+      };
+
+      window.addEventListener('mousemove', rapidFireMouseMoveHandler);
+      window.addEventListener('mousedown', rapidFireMouseDownHandler);
+      window.addEventListener('mouseup', rapidFireMouseUpHandler);
+    }
+
+    powerUpTimeout = setTimeout(() => {
+      if (gameState) {
+        gameState = removeFunc(gameState);
+
+        // Clear color cycling for invincible
+        if (name === 'invincible' && colorCycleInterval) {
+          clearInterval(colorCycleInterval);
+          colorCycleInterval = null;
+        }
+
+        // Remove rapid fire listeners
+        if (name === 'rapidFire') {
+          removeRapidFireListeners();
+          if (rapidFireInterval) {
+            clearInterval(rapidFireInterval);
+            rapidFireInterval = null;
+          }
+        }
+      }
+    }, duration);
+  };
+
+  // Handle game over
+  const handleGameOver = () => {
+    cancelAnimationFrame(animationId);
+    clearAllIntervals();
+    removeRapidFireListeners();
+    stopBackgroundMusic();
+
+    hideElements([canvas]);
+    showElements([gameOverScreen]);
+    setElementText(endScore, gameState.player.score);
+
+    gameState = null;
+  };
+
+  // Main game loop
+  const gameLoop = () => {
+    if (!gameState) return;
+
+    frameCount++;
+
+    // Start background music (handles autoplay restrictions)
+    if (frameCount === 1) {
+      startBackgroundMusic();
+    }
+
+    // Update difficulty based on score
+    gameState = updateDifficulty(gameState);
+
+    // Update all entities
+    gameState = updateAllEntities(gameState, canvas);
+
+    // Process collisions
+    gameState = processCollisions(
+      gameState,
+      canvas,
+      handleGameOver
+    );
+
+    // If game over occurred, stop processing
+    if (!gameState) return;
+
+    // Handle collected power-up
+    if (gameState.collectedPowerUp) {
+      gameState = activatePowerUp(gameState, gameState.collectedPowerUp, schedulePowerUpRemoval);
+      gameState = { ...gameState, collectedPowerUp: null };
+    }
+
+    // Handle pending power-up drops
+    if (gameState.pendingPowerUpDrop) {
+      const { x, y } = gameState.pendingPowerUpDrop;
+      const powerUp = createPowerUp(x, y, 15, getRandomPowerUpType());
+      gameState = addPowerUpToState(gameState, powerUp);
+      gameState = { ...gameState, pendingPowerUpDrop: null };
+    }
+
+    // Handle damage flash reset
+    if (gameState.player.color === 'red' && !damageTimeout) {
+      damageTimeout = setTimeout(() => {
+        if (gameState) {
+          gameState = updatePlayerInState(gameState, { color: 'white' });
+        }
+        damageTimeout = null;
+      }, 300);
+    }
+
+    // Render
+    renderGame(ctx, canvas, gameState, frameCount);
+
+    // Continue loop if running
+    if (gameState && gameState.flags.isRunning) {
+      animationId = requestAnimationFrame(gameLoop);
+    }
+  };
+
+  // Start the game
+  const startGame = () => {
+    hideElements([startBtn, startScreen, gameOverScreen, pauseScreen]);
+    showElements([canvas]);
+
+    frameCount = 0;
+    gameState = createInitialState(canvas);
+    gameState = updateFlagsInState(gameState, { gameStarted: true });
+
+    startEnemySpawner();
+    gameLoop();
+  };
+
+  // Pause the game
+  const pauseGame = () => {
+    if (!gameState) return;
+
+    gameState = updateFlagsInState(gameState, { isRunning: false });
+    cancelAnimationFrame(animationId);
+    clearInterval(enemySpawnInterval);
+    enemySpawnInterval = null;
+    backgroundAudio.pause();
+
+    hideElements([canvas]);
+    showElements([pauseScreen]);
+    setElementText(pauseScore, gameState.player.score);
+  };
+
+  // Resume the game
+  const resumeGame = () => {
+    if (!gameState) return;
+
+    gameState = updateFlagsInState(gameState, { isRunning: true });
+    showElements([canvas]);
+    hideElements([pauseScreen]);
+
+    startEnemySpawner();
+    startBackgroundMusic();
+    gameLoop();
+  };
+
+  // Input handlers
+  const handleKeyDown = (event) => {
+    if (!gameState) return;
+
+    const keyMap = {
+      'a': 'left', 'ArrowLeft': 'left',
+      'd': 'right', 'ArrowRight': 'right',
+      'w': 'up', 'ArrowUp': 'up',
+      's': 'down', 'ArrowDown': 'down'
+    };
+
+    const direction = keyMap[event.key];
+    if (direction) {
+      gameState = updateInputInState(gameState, { [direction]: true });
+    }
+  };
+
+  const handleKeyUp = (event) => {
+    if (!gameState) return;
+
+    const keyMap = {
+      'a': 'left', 'ArrowLeft': 'left',
+      'd': 'right', 'ArrowRight': 'right',
+      'w': 'up', 'ArrowUp': 'up',
+      's': 'down', 'ArrowDown': 'down'
+    };
+
+    const direction = keyMap[event.key];
+    if (direction) {
+      gameState = updateInputInState(gameState, { [direction]: false });
+    }
+  };
+
+  const handleKeyPress = (event) => {
+    if (event.key === 'x' && gameState && gameState.flags.isRunning) {
+      pauseGame();
+    } else if (event.key === 'z' && gameState && !gameState.flags.isRunning) {
+      resumeGame();
+    }
+  };
+
+  const handleClick = (event) => {
+    // Don't shoot on UI button clicks
+    if (event.target.tagName === 'BUTTON') return;
+    if (!gameState || !gameState.flags.isRunning) return;
+
+    shootProjectile(event);
+  };
+
+  // Initialize on window load
+  window.addEventListener('load', () => {
     hideElements([canvas, gameOverScreen, pauseScreen]);
 
-    restartBtn.addEventListener("click", () => {
-        hideElements([gameOverScreen]);
-        startGame();
+    // Button listeners
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+
+    // Game input listeners
+    addTrackedListener(window, 'click', handleClick);
+    addTrackedListener(window, 'keydown', handleKeyDown);
+    addTrackedListener(window, 'keyup', handleKeyUp);
+    addTrackedListener(window, 'keypress', handleKeyPress);
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      canvas.width = innerWidth;
+      canvas.height = innerHeight - 3;
     });
-
-    strtBtn.addEventListener("click", () => {
-        startGame();
-    });
-
-    addEventListener("click", (event) => {
-        shootProjectile(event);
-        setAudio(audio);
-    });
-
-    addEventListener("keydown", (event) => {
-        if (event.key === "a" || event.key === 'ArrowLeft') {
-            isLeft = true;
-        }
-
-        if (event.key === "d" || event.key === 'ArrowRight') {
-            isRight = true;
-        }
-
-        if (event.key === "w" || event.key === 'ArrowUp') {
-            isUp = true;
-        }
-
-        if (event.key === "s" || event.key === 'ArrowDown') {
-            isDown = true;
-        }
-
-    });
-
-    addEventListener("keyup", (event) => {
-        if (event.key === "a" || event.key === "ArrowLeft") {
-            isLeft = false;
-        }
-
-        if (event.key === "d" || event.key === "ArrowRight") {
-            isRight = false;
-        }
-
-        if (event.key === "w" || event.key === "ArrowUp") {
-            isUp = false;
-        }
-
-        if (event.key === "s" || event.key === "ArrowDown") {
-            isDown = false;
-        }
-    });
-
-    addEventListener("keypress", (event) => {
-        if (event.key === "x") {
-
-            if (isRunning) {
-                pause();
-            }
-
-        }
-
-    });
-
-    addEventListener("keypress", (event) => {
-        if (event.key === "z") {
-
-            if (!isRunning) {
-                //TODO: handleGameIsRunning function
-                pause();
-                backgroundAudio.pause();
-                revealElements([canvas]);
-                hideElements([pauseScreen]);
-                spawnEnemies();
-            }
-
-        }
-
-    });
-
-});
+  });
+})();

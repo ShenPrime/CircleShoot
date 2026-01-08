@@ -26,10 +26,11 @@
   let gameState = null;
   let animationId = null;
   let frameCount = 0;
+  let lastFrameTime = 0;
 
   // Interval tracking for cleanup
   let enemySpawnInterval = null;
-  let powerUpTimeout = null;
+  const powerUpTimeouts = new Map(); // Track multiple power-up timeouts by name
   let colorCycleInterval = null;
   let damageTimeout = null;
   let rapidFireInterval = null;
@@ -61,10 +62,9 @@
       clearInterval(enemySpawnInterval);
       enemySpawnInterval = null;
     }
-    if (powerUpTimeout) {
-      clearTimeout(powerUpTimeout);
-      powerUpTimeout = null;
-    }
+    // Clear all power-up timeouts
+    powerUpTimeouts.forEach((timeout) => clearTimeout(timeout));
+    powerUpTimeouts.clear();
     if (colorCycleInterval) {
       clearInterval(colorCycleInterval);
       colorCycleInterval = null;
@@ -148,9 +148,10 @@
       event.clientY - gameState.player.y,
       event.clientX - gameState.player.x
     );
+    const speed = gameState.player.projectileSpeed; // Uses player's projectile speed (increases with level)
     const velocity = {
-      x: Math.cos(angle) * 10,
-      y: Math.sin(angle) * 10
+      x: Math.cos(angle) * speed,
+      y: Math.sin(angle) * speed
     };
 
     const projectile = createProjectile(
@@ -165,11 +166,17 @@
     playShootSound();
   };
 
-  // Schedule power-up removal
+  // Track current power-up info for HUD
+  let currentPowerUpInfo = null;
+
+  // Schedule power-up removal (supports multiple concurrent power-ups)
   const schedulePowerUpRemoval = (name, duration, removeFunc) => {
-    // Clear any existing power-up timeout
-    if (powerUpTimeout) {
-      clearTimeout(powerUpTimeout);
+    // Store power-up info for the game loop to pick up
+    currentPowerUpInfo = { name, duration };
+
+    // If same power-up is already active, clear its old timeout (refresh duration)
+    if (powerUpTimeouts.has(name)) {
+      clearTimeout(powerUpTimeouts.get(name));
     }
 
     // Handle invincible color cycling
@@ -186,13 +193,22 @@
 
     // Handle rapid fire listeners
     if (name === 'rapidFire') {
+      // Remove existing listeners first to prevent stacking
+      removeRapidFireListeners();
+      if (rapidFireInterval) {
+        clearInterval(rapidFireInterval);
+        rapidFireInterval = null;
+      }
+
       rapidFireMouseMoveHandler = (event) => {
         rapidFireMousePos = { clientX: event.clientX, clientY: event.clientY };
       };
       rapidFireMouseDownHandler = () => {
-        rapidFireInterval = setInterval(() => {
-          shootProjectile(rapidFireMousePos);
-        }, 100);
+        if (!rapidFireInterval) {
+          rapidFireInterval = setInterval(() => {
+            shootProjectile(rapidFireMousePos);
+          }, 100);
+        }
       };
       rapidFireMouseUpHandler = () => {
         if (rapidFireInterval) {
@@ -206,9 +222,12 @@
       window.addEventListener('mouseup', rapidFireMouseUpHandler);
     }
 
-    powerUpTimeout = setTimeout(() => {
+    // Schedule this power-up's removal
+    const timeout = setTimeout(() => {
       if (gameState) {
         gameState = removeFunc(gameState);
+        gameState = removeActivePowerUp(gameState, name);
+        powerUpTimeouts.delete(name);
 
         // Clear color cycling for invincible
         if (name === 'invincible' && colorCycleInterval) {
@@ -226,6 +245,8 @@
         }
       }
     }, duration);
+
+    powerUpTimeouts.set(name, timeout);
   };
 
   // Handle game over
@@ -243,9 +264,12 @@
   };
 
   // Main game loop
-  const gameLoop = () => {
+  const gameLoop = (currentTime = 0) => {
     if (!gameState) return;
 
+    // Calculate delta time for smooth animations
+    const deltaTime = lastFrameTime ? currentTime - lastFrameTime : 16.67;
+    lastFrameTime = currentTime;
     frameCount++;
 
     // Start background music (handles autoplay restrictions)
@@ -253,11 +277,22 @@
       startBackgroundMusic();
     }
 
+    // Update power-up timers for HUD
+    if (gameState.activePowerUps && gameState.activePowerUps.length > 0) {
+      gameState = updateActivePowerUpTimers(gameState, deltaTime);
+    }
+
+    // Update no-hit streak timer
+    gameState = updateStreak(gameState, deltaTime);
+
     // Update difficulty based on score
     gameState = updateDifficulty(gameState);
 
     // Update all entities
     gameState = updateAllEntities(gameState, canvas);
+
+    // Update shockwave (if active)
+    gameState = updateShockwave(gameState, canvas);
 
     // Process collisions
     gameState = processCollisions(
@@ -271,22 +306,53 @@
 
     // Handle collected power-up
     if (gameState.collectedPowerUp) {
-      gameState = activatePowerUp(gameState, gameState.collectedPowerUp, schedulePowerUpRemoval);
+      const collectedType = gameState.collectedPowerUp;
+      gameState = activatePowerUp(gameState, collectedType, schedulePowerUpRemoval);
       gameState = { ...gameState, collectedPowerUp: null };
+
+      // Add healing particles for health power-up
+      if (collectedType === 'health') {
+        const healParticles = [];
+        for (let i = 0; i < 25; i++) {
+          healParticles.push(createParticle(
+            gameState.player.x,
+            gameState.player.y,
+            Math.random() * 4 + 2,
+            '#00ff88',
+            {
+              x: (Math.random() - 0.5) * 8,
+              y: (Math.random() - 0.5) * 8
+            }
+          ));
+        }
+        gameState = {
+          ...gameState,
+          particles: [...gameState.particles, ...healParticles]
+        };
+      }
+
+      // Add the power-up to HUD display (after activatePowerUp returns)
+      if (currentPowerUpInfo) {
+        gameState = addActivePowerUp(gameState, currentPowerUpInfo.name, currentPowerUpInfo.duration);
+      }
     }
 
     // Handle pending power-up drops
     if (gameState.pendingPowerUpDrop) {
       const { x, y } = gameState.pendingPowerUpDrop;
-      const powerUp = createPowerUp(x, y, 15, getRandomPowerUpType());
+      // Get types already active to avoid duplicates
+      const activeTypes = gameState.activePowerUps.map(p => p.name);
+      const powerUp = createPowerUp(x, y, 15, getRandomPowerUpType(activeTypes));
       gameState = addPowerUpToState(gameState, powerUp);
       gameState = { ...gameState, pendingPowerUpDrop: null };
     }
 
-    // Handle damage flash reset
-    if (gameState.player.color === 'red' && !damageTimeout) {
+    // Handle color flash reset (damage red or heal green)
+    const playerColor = gameState.player.color;
+    const isFlashColor = playerColor === 'red' || playerColor === '#00ff88';
+    if (isFlashColor && !damageTimeout) {
       damageTimeout = setTimeout(() => {
-        if (gameState) {
+        if (gameState && !gameState.player.isInvincible) {
           gameState = updatePlayerInState(gameState, { color: 'white' });
         }
         damageTimeout = null;
@@ -308,11 +374,12 @@
     showElements([canvas]);
 
     frameCount = 0;
+    lastFrameTime = 0;
     gameState = createInitialState(canvas);
     gameState = updateFlagsInState(gameState, { gameStarted: true });
 
     startEnemySpawner();
-    gameLoop();
+    requestAnimationFrame(gameLoop);
   };
 
   // Pause the game
@@ -338,9 +405,10 @@
     showElements([canvas]);
     hideElements([pauseScreen]);
 
+    lastFrameTime = 0;
     startEnemySpawner();
     startBackgroundMusic();
-    gameLoop();
+    requestAnimationFrame(gameLoop);
   };
 
   // Input handlers

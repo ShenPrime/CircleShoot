@@ -6,10 +6,15 @@ const createPlayer = (x, y, radius = 15, color = 'white') => ({
   radius,
   color,
   velocity: 3,
+  baseVelocity: 3,        // Base movement speed (increases with rank)
+  projectileSpeed: 10,    // Base projectile speed (increases with rank)
   lives: 3,
   score: 0,
+  rank: 1,                // Current rank (1-15+)
   hasPowerUp: false,
-  isInvincible: false
+  isInvincible: false,
+  noHitStreak: 0,         // Time in ms since last hit
+  streakTier: 0           // Current streak tier (0-6)
 });
 
 const createEnemy = (x, y, radius, color, velocity, health) => ({

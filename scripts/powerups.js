@@ -1,17 +1,18 @@
 // Power-up definitions and handlers - data-driven approach
 
-const POWER_UP_TYPES = ['speed', 'tiny', 'health', 'cannon', 'invincible', 'rapidFire'];
+const POWER_UP_TYPES = ['speed', 'tiny', 'health', 'cannon', 'invincible', 'rapidFire', 'shockwave'];
 
 const POWER_UP_CONFIG = {
   health: {
-    duration: 300,
+    duration: 500,  // Instant effect, short duration
     color: 'green',
     apply: (state) => ({
       ...state,
       player: {
         ...state.player,
-        lives: state.player.lives + 1,
-        color: 'green',
+        lives: Math.min(state.player.lives + 1, 5), // Cap at 5 lives
+        color: '#00ff88',
+        healFlash: 20, // Frames of screen flash
         hasPowerUp: true
       }
     }),
@@ -22,18 +23,18 @@ const POWER_UP_CONFIG = {
         color: 'white',
         hasPowerUp: false
       },
-      flags: { ...state.flags, powerUpDropped: false }
+      flags: { ...state.flags }
     })
   },
 
   speed: {
-    duration: 10000,
+    duration: 18000,  // 18 seconds
     color: 'yellow',
     apply: (state) => ({
       ...state,
       player: {
         ...state.player,
-        velocity: 6,
+        velocity: state.player.baseVelocity * 2, // Double the base speed
         hasPowerUp: true
       }
     }),
@@ -41,15 +42,15 @@ const POWER_UP_CONFIG = {
       ...state,
       player: {
         ...state.player,
-        velocity: 3,
+        velocity: state.player.baseVelocity, // Restore to base speed
         hasPowerUp: false
       },
-      flags: { ...state.flags, powerUpDropped: false }
+      flags: { ...state.flags }
     })
   },
 
   cannon: {
-    duration: 10000,
+    duration: 15000,  // 15 seconds
     color: 'orange',
     apply: (state) => ({
       ...state,
@@ -68,12 +69,12 @@ const POWER_UP_CONFIG = {
         projectileRadius: 5,
         projectileDamage: 1
       },
-      flags: { ...state.flags, powerUpDropped: false }
+      flags: { ...state.flags }
     })
   },
 
   tiny: {
-    duration: 10000,
+    duration: 20000,  // 20 seconds
     color: 'purple',
     apply: (state) => ({
       ...state,
@@ -90,12 +91,12 @@ const POWER_UP_CONFIG = {
         radius: 15,
         hasPowerUp: false
       },
-      flags: { ...state.flags, powerUpDropped: false }
+      flags: { ...state.flags }
     })
   },
 
   invincible: {
-    duration: 5000,
+    duration: 8000,  // 8 seconds
     color: 'rainbow',
     apply: (state) => ({
       ...state,
@@ -113,12 +114,12 @@ const POWER_UP_CONFIG = {
         color: 'white',
         hasPowerUp: false
       },
-      flags: { ...state.flags, powerUpDropped: false }
+      flags: { ...state.flags }
     })
   },
 
   rapidFire: {
-    duration: 10000,
+    duration: 15000,  // 15 seconds
     color: 'red',
     apply: (state) => ({
       ...state,
@@ -128,13 +129,43 @@ const POWER_UP_CONFIG = {
     remove: (state) => ({
       ...state,
       player: { ...state.player, hasPowerUp: false },
-      flags: { ...state.flags, rapidFireActive: false, powerUpDropped: false }
+      flags: { ...state.flags, rapidFireActive: false }
+    })
+  },
+
+  shockwave: {
+    duration: 100,  // Instant effect, minimal duration for HUD
+    color: 'cyan',
+    apply: (state) => ({
+      ...state,
+      player: { ...state.player, hasPowerUp: true },
+      shockwave: {
+        x: state.player.x,
+        y: state.player.y,
+        radius: 0,
+        active: true,
+        speed: 18,
+        hitEnemies: [] // Track which enemies have been hit
+      }
+    }),
+    remove: (state) => ({
+      ...state,
+      player: { ...state.player, hasPowerUp: false }
     })
   }
 };
 
-const getRandomPowerUpType = () =>
-  POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)];
+const getRandomPowerUpType = (excludeTypes = []) => {
+  // Filter out already active power-up types
+  const availableTypes = POWER_UP_TYPES.filter(type => !excludeTypes.includes(type));
+
+  // If all types are active, pick any random one (will extend timer)
+  if (availableTypes.length === 0) {
+    return POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)];
+  }
+
+  return availableTypes[Math.floor(Math.random() * availableTypes.length)];
+};
 
 const getPowerUpConfig = (name) => POWER_UP_CONFIG[name];
 

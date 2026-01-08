@@ -60,10 +60,17 @@ const processCollisions = (state, canvas, onGameOver) => {
         onGameOver();
         return null; // Signal game over
       }
+      // Add damage particles around player
+      newParticles = newParticles.concat(
+        createExplosionParticles(player.x, player.y, '#ff2d2d', 30)
+      );
       newPlayer = {
         ...newPlayer,
         lives: newPlayer.lives - 1,
-        color: 'red'
+        color: 'red',
+        damageFlash: 15, // Frames of screen flash
+        noHitStreak: 0,  // Reset streak on hit
+        streakTier: 0
       };
       continue; // Remove the enemy that hit us
     }
@@ -94,9 +101,9 @@ const processCollisions = (state, canvas, onGameOver) => {
             createExplosionParticles(projectile.x, projectile.y, enemy.color, 25)
           );
 
-          // Check for power-up drop
-          const dropChance = Math.round(Math.random() * 3);
-          if (dropChance === 1 && !player.hasPowerUp && !state.flags.powerUpDropped) {
+          // Check for power-up drop (1 in 10 chance, max 3 on ground)
+          const dropChance = Math.floor(Math.random() * 10);
+          if (dropChance === 0 && powerUps.length < 3) {
             powerUpToActivate = { x: projectile.x, y: projectile.y };
           }
         }

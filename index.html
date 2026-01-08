@@ -4,39 +4,63 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:ital@1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Orbitron:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+
     <link rel="stylesheet" href="./style/styles.css" />
-    <title>Circle Shoot</title>
+    <title>Circle Shoot - Cosmic Edition</title>
   </head>
   <body>
-    <div class="startGame">
-      <h1>Circle Shoot</h1>
-      <h2>Instructions</h2>
-      <h3>
-        Use W A S D keys to move the white ball around the screen and use your
-        mouse to aim and shoot. avoid collision with enemies that chase you, and
-        if you're lucky, collect glowing circles for cool effects!<br><br> hint: Press 'X' to pause the game anytime!
-      </h3>
-      <button class="strtBtn">Got it, now let me play!</button>
+    <!-- Start Screen -->
+    <div class="menu-screen startGame">
+      <div class="menu-content">
+        <h1 class="game-title">CIRCLE SHOOT</h1>
+        <p class="subtitle">★ COSMIC EDITION ★</p>
+
+        <h2 class="section-title">HOW TO PLAY</h2>
+        <p class="instructions">
+          Use <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> to navigate through space.<br>
+          <kbd>Click</kbd> to fire projectiles at incoming enemies.<br>
+          Collect glowing orbs for powerful upgrades!
+        </p>
+
+        <button class="btn-primary strtBtn">▶ START MISSION</button>
+
+        <p class="hint">Press <kbd>X</kbd> to pause anytime</p>
+      </div>
     </div>
 
-    <div class="gameOver">
-      <h1>Game Over! They Got you! </h1>
-      <h2>You Scored: <span class="score">0</span></h2>
-      <button class="restartBtn">Let me try one more time...</button>
+    <!-- Game Over Screen -->
+    <div class="menu-screen gameOver">
+      <div class="menu-content">
+        <h1 class="game-over-title">MISSION FAILED</h1>
+
+        <p class="score-label">FINAL SCORE</p>
+        <p class="score-display"><span class="score">0</span></p>
+
+        <button class="btn-primary restartBtn">↻ TRY AGAIN</button>
+      </div>
     </div>
 
+    <!-- Pause Screen -->
+    <div class="menu-screen pause">
+      <div class="menu-content">
+        <h1 class="pause-title">⏸ PAUSED</h1>
 
-    <div class='pause'>
-      <h1>GAME PAUSED</h1>
-      <h2>Your score is: <span class="pauseScore">0</span></h2>
-      <h3>Press 'Z' to unpause!</h3>
+        <p class="score-label">CURRENT SCORE</p>
+        <p class="score-display"><span class="pauseScore">0</span></p>
+
+        <p class="hint">Press <kbd>Z</kbd> to resume</p>
+      </div>
     </div>
+
+    <!-- Game Canvas -->
     <canvas></canvas>
 
     <!-- Load scripts in dependency order -->

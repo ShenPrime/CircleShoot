@@ -1,6 +1,6 @@
 // Power-up definitions and handlers - data-driven approach
 
-const POWER_UP_TYPES = ['speed', 'tiny', 'health', 'cannon', 'invincible', 'rapidFire', 'shockwave'];
+const POWER_UP_TYPES = ['speed', 'tiny', 'health', 'cannon', 'invincible', 'rapidFire', 'shockwave', 'multishot'];
 
 const POWER_UP_CONFIG = {
   health: {
@@ -151,6 +151,21 @@ const POWER_UP_CONFIG = {
     remove: (state) => ({
       ...state,
       player: { ...state.player, hasPowerUp: false }
+    })
+  },
+
+  multishot: {
+    duration: 12000,  // 12 seconds
+    color: 'pink',
+    apply: (state) => ({
+      ...state,
+      player: { ...state.player, hasPowerUp: true },
+      flags: { ...state.flags, multishotActive: true }
+    }),
+    remove: (state) => ({
+      ...state,
+      player: { ...state.player, hasPowerUp: false },
+      flags: { ...state.flags, multishotActive: false }
     })
   }
 };

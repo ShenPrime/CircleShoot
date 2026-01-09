@@ -180,25 +180,49 @@
   const shootProjectile = (event) => {
     if (!gameState || !gameState.flags.isRunning) return;
 
-    const angle = Math.atan2(
+    const baseAngle = Math.atan2(
       event.clientY - gameState.player.y,
       event.clientX - gameState.player.x
     );
     const speed = gameState.player.projectileSpeed; // Uses player's projectile speed (increases with level)
-    const velocity = {
-      x: Math.cos(angle) * speed,
-      y: Math.sin(angle) * speed
-    };
 
-    const projectile = createProjectile(
-      gameState.player.x,
-      gameState.player.y,
-      gameState.settings.projectileRadius,
-      'red',
-      velocity
-    );
+    // Check if multishot is active
+    if (gameState.flags.multishotActive) {
+      // Fire 5 bullets in a spread pattern
+      const spreadAngle = Math.PI * 0.2; // 36 degrees total spread
+      const bulletCount = 5;
+      for (let i = 0; i < bulletCount; i++) {
+        const angleOffset = -spreadAngle / 2 + (spreadAngle / (bulletCount - 1)) * i;
+        const angle = baseAngle + angleOffset;
+        const velocity = {
+          x: Math.cos(angle) * speed,
+          y: Math.sin(angle) * speed
+        };
+        const projectile = createProjectile(
+          gameState.player.x,
+          gameState.player.y,
+          gameState.settings.projectileRadius,
+          'red',
+          velocity
+        );
+        gameState = addProjectileToState(gameState, projectile);
+      }
+    } else {
+      // Single shot
+      const velocity = {
+        x: Math.cos(baseAngle) * speed,
+        y: Math.sin(baseAngle) * speed
+      };
+      const projectile = createProjectile(
+        gameState.player.x,
+        gameState.player.y,
+        gameState.settings.projectileRadius,
+        'red',
+        velocity
+      );
+      gameState = addProjectileToState(gameState, projectile);
+    }
 
-    gameState = addProjectileToState(gameState, projectile);
     playShootSound();
   };
 
@@ -399,9 +423,13 @@
     // Handle pending power-up drops
     if (gameState.pendingPowerUpDrop) {
       const { x, y } = gameState.pendingPowerUpDrop;
+      // Clamp position to keep powerups away from screen edges
+      const margin = 50;
+      const clampedX = Math.max(margin, Math.min(canvas.width - margin, x));
+      const clampedY = Math.max(margin, Math.min(canvas.height - margin, y));
       // Get types already active to avoid duplicates
       const activeTypes = gameState.activePowerUps.map(p => p.name);
-      const powerUp = createPowerUp(x, y, 15, getRandomPowerUpType(activeTypes));
+      const powerUp = createPowerUp(clampedX, clampedY, 15, getRandomPowerUpType(activeTypes));
       gameState = addPowerUpToState(gameState, powerUp);
       gameState = { ...gameState, pendingPowerUpDrop: null };
     }

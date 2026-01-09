@@ -1,80 +1,59 @@
 # CircleShoot
-A fast-paced horde shooter game 
 
+A fast-paced arcade shooter with cosmic visuals, powerups, and infinite replayability.
 
-<a href="https://shenprime.github.io/CircleShoot/"> Demo the game</a>
+**[Play Now](https://shenprime.github.io/CircleShoot/)**
 
+## About
 
-<h2> Description </h2> 
-The main game loop consists of the player running around the canvas, avoiding collision with the circles that chase them. The player will also have to shoot the randomly spawning circles to kill them and gain score. 
+CircleShoot is a browser-based survival shooter where you control a glowing orb, fending off endless waves of enemies. Collect powerups, climb the ranks, and chase high scores in a neon-lit cosmic arena.
 
-<h2>MVP</h2> 
-The mvp will be a game where the player can move in 4 different directions around the canvas while being followed by randomly spawning circles (who will spawn from random coordinates). The player will be able to shoot projectiles at the circles. the projectiles will shoot towards the mouse click coordinates at the time of the click. 
+## How to Play
 
-<h2>Backlog</h2> 
-The list of nice to have backlog features will include:<br> 
--Player rotation that follows mouse movement.<br> 
--Player health ✅ <br>
--Enemy health ✅<br>
--Item pickups ✅<br> 
--Health pickups ✅<br> 
--Highscore ✅<br> 
--randomly generated obstacles in levels<br> 
--music and sound effects ✅<br> 
+### Desktop
+- **WASD / Arrow Keys** - Move
+- **Click & Hold** - Fire toward cursor
+- **X** - Pause
+- **Z** - Resume
 
+### Mobile
+- **Left Joystick** - Movement
+- **Right Joystick** - Aim & auto-fire
 
-<h2>Data Structres</h2> 
+## Features
 
-<h3>main.js</h3> 
--splashScreen()<br>
--startGame()<br>
--gameOver()<br>
+### Powerups
+Destroy enemies for a chance to drop one of 8 powerups:
 
-<br>
-<h3>player.js</h3>
--playerMove()<br>
--shootBuns()<br>
--die()<br>
+| Powerup | Effect | Duration |
+|---------|--------|----------|
+| **Health** | Restore 1 life (max 5) | Instant |
+| **Speed** | Double movement speed | 18s |
+| **Cannon** | 6x larger projectiles, 2x damage | 15s |
+| **Tiny** | Shrink to 1/3 size | 20s |
+| **Invincible** | Destroy enemies on contact | 8s |
+| **Rapid Fire** | Hold to fire continuously | 15s |
+| **Shockwave** | Destroy all nearby enemies | Instant |
+| **Multishot** | Fire 5 projectiles in a spread | 12s |
 
+### Ranking System
+Progress through 15 ranks as you score points. Each rank-up grants:
+- Permanent speed boost
+- Faster projectiles
+- A free life
 
-<br>
-<h3>zombie.js</h3>
--followPlayer()<br>
--die()<br>
--spawn()<br>
+Ranks range from **Recruit** to **Celestial** (70,000+ points).
 
+### No-Hit Streaks
+Survive without taking damage to earn streak titles from **Focused** (10s) to **Legendary** (2:30). Your best streak is tracked and displayed at game over.
 
-<br> 
-<h2>Game States</h2>
--Splash Screen<br> 
--Level-in-progress<br> 
--Game Over<br> 
+## Tech
 
-<br> 
-
-<h2>Tasks</h2>
--Choose game assets<br> 
--draw the DOM and canvas<br> 
--program player basic movement<br> 
--program zombie spawn<br>
--program zombie followPlayer mechanic<br> 
--program player shoot mechanic<br> 
--program zombie death<br>
--program winning condition<br>
--add music and sound effects<br> 
-
--audio off/on button <br>
--program player rotation based on mouse movement<br>
--program more complex player movement directions<br> 
--program player health<br> 
--program score functionality<br> 
--program level difficulty<br>
-
--program item pick ups or any addional features<br> 
-
-<br>
-<h2>Additional Links</h2>
--Nothing yet, to be updated after research and resource selections <br>
+Built with vanilla JavaScript and HTML5 Canvas. Features include:
+- Functional/immutable state management
+- Particle effects and glow rendering
+- Adaptive difficulty scaling
+- Touch-optimized mobile controls
 
 
 

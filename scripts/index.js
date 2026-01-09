@@ -231,10 +231,20 @@
 
   // Schedule power-up removal (supports multiple concurrent power-ups)
   const schedulePowerUpRemoval = (name, duration, removeFunc) => {
+    // Calculate actual timeout duration (extend if already active)
+    let actualDuration = duration;
+    if (gameState && gameState.activePowerUps) {
+      const existing = gameState.activePowerUps.find(p => p.name === name);
+      if (existing) {
+        // Add new duration to remaining time
+        actualDuration = existing.timeRemaining + duration;
+      }
+    }
+
     // Store power-up info for the game loop to pick up
     currentPowerUpInfo = { name, duration };
 
-    // If same power-up is already active, clear its old timeout (refresh duration)
+    // If same power-up is already active, clear its old timeout
     if (powerUpTimeouts.has(name)) {
       clearTimeout(powerUpTimeouts.get(name));
     }
@@ -288,7 +298,7 @@
       }
     }
 
-    // Schedule this power-up's removal
+    // Schedule this power-up's removal (use actualDuration for extended powerups)
     const timeout = setTimeout(() => {
       if (gameState) {
         gameState = removeFunc(gameState);
@@ -310,7 +320,7 @@
           }
         }
       }
-    }, duration);
+    }, actualDuration);
 
     powerUpTimeouts.set(name, timeout);
   };
@@ -390,11 +400,13 @@
     // Handle collected power-up
     if (gameState.collectedPowerUp) {
       const collectedType = gameState.collectedPowerUp;
-      gameState = activatePowerUp(gameState, collectedType, schedulePowerUpRemoval);
       gameState = { ...gameState, collectedPowerUp: null };
 
-      // Add healing particles for health power-up
+      // Health powerup activates immediately (exception)
       if (collectedType === 'health') {
+        gameState = activatePowerUp(gameState, collectedType, schedulePowerUpRemoval);
+
+        // Add healing particles
         const healParticles = [];
         for (let i = 0; i < 25; i++) {
           healParticles.push(createParticle(
@@ -412,11 +424,23 @@
           ...gameState,
           particles: [...gameState.particles, ...healParticles]
         };
-      }
 
-      // Add the power-up to HUD display (after activatePowerUp returns)
-      if (currentPowerUpInfo) {
-        gameState = addActivePowerUp(gameState, currentPowerUpInfo.name, currentPowerUpInfo.duration);
+        // Add to HUD display
+        if (currentPowerUpInfo) {
+          gameState = addActivePowerUp(gameState, currentPowerUpInfo.name, currentPowerUpInfo.duration);
+        }
+      } else {
+        // Non-health powerups go to hotbar
+        if (canAddToHotbar(gameState, collectedType)) {
+          // Add to hotbar (stacks if same type exists)
+          gameState = addToHotbar(gameState, collectedType);
+        } else {
+          // Hotbar full and can't stack - auto-activate the collected powerup
+          gameState = activatePowerUp(gameState, collectedType, schedulePowerUpRemoval);
+          if (currentPowerUpInfo) {
+            gameState = addActivePowerUp(gameState, currentPowerUpInfo.name, currentPowerUpInfo.duration);
+          }
+        }
       }
     }
 
@@ -510,9 +534,42 @@
     requestAnimationFrame(gameLoop);
   };
 
+  // Activate powerup from hotbar slot
+  const activateFromHotbar = (slotIndex) => {
+    if (!gameState || !gameState.flags.isRunning) return;
+
+    const slot = getHotbarSlot(gameState, slotIndex);
+    if (!slot) return; // Empty slot
+
+    // Activate the powerup
+    gameState = activatePowerUp(gameState, slot.name, schedulePowerUpRemoval);
+
+    // Add to HUD display
+    if (currentPowerUpInfo) {
+      gameState = addActivePowerUp(gameState, currentPowerUpInfo.name, currentPowerUpInfo.duration);
+    }
+
+    // Remove one from hotbar
+    gameState = removeFromHotbar(gameState, slotIndex);
+  };
+
   // Input handlers
   const handleKeyDown = (event) => {
     if (!gameState) return;
+
+    // Hotbar activation (1, 2, 3 keys)
+    if (gameState.flags.isRunning) {
+      if (event.key === '1') {
+        activateFromHotbar(0);
+        return;
+      } else if (event.key === '2') {
+        activateFromHotbar(1);
+        return;
+      } else if (event.key === '3') {
+        activateFromHotbar(2);
+        return;
+      }
+    }
 
     const keyMap = {
       'a': 'left', 'ArrowLeft': 'left',

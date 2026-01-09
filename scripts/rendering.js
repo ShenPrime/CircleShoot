@@ -687,6 +687,78 @@ const drawScreenFlash = (ctx, canvas, player) => {
   }
 };
 
+// Draw hotbar at bottom center of screen
+const drawHotbar = (ctx, canvas, hotbar, frameCount) => {
+  const slotSize = 60;
+  const slotSpacing = 10;
+  const totalWidth = (slotSize * 3) + (slotSpacing * 2);
+  const startX = (canvas.width - totalWidth) / 2;
+  const y = canvas.height - 80;
+
+  for (let i = 0; i < 3; i++) {
+    const x = startX + (i * (slotSize + slotSpacing));
+    const slot = hotbar[i];
+
+    // Slot background
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.strokeStyle = slot ? '#ffffff' : '#444444';
+    ctx.lineWidth = 2;
+
+    // Rounded rectangle for slot
+    const radius = 8;
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + slotSize - radius, y);
+    ctx.quadraticCurveTo(x + slotSize, y, x + slotSize, y + radius);
+    ctx.lineTo(x + slotSize, y + slotSize - radius);
+    ctx.quadraticCurveTo(x + slotSize, y + slotSize, x + slotSize - radius, y + slotSize);
+    ctx.lineTo(x + radius, y + slotSize);
+    ctx.quadraticCurveTo(x, y + slotSize, x, y + slotSize - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw hotkey number
+    ctx.font = 'bold 12px Orbitron, sans-serif';
+    ctx.fillStyle = '#666666';
+    ctx.textAlign = 'center';
+    ctx.fillText((i + 1).toString(), x + slotSize / 2, y + slotSize - 6);
+
+    if (slot) {
+      // Get powerup color
+      let color;
+      if (slot.name === 'invincible') {
+        const hue = (frameCount * 4) % 360;
+        color = `hsl(${hue}, 100%, 60%)`;
+      } else {
+        color = POWERUP_COLORS[slot.name] || '#ffffff';
+      }
+
+      // Draw powerup symbol with glow
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 15;
+      drawPowerUpSymbol(ctx, x + slotSize / 2, y + slotSize / 2 - 5, slotSize * 0.5, slot.name, frameCount);
+      ctx.shadowBlur = 0;
+
+      // Draw stack count if > 1
+      if (slot.count > 1) {
+        ctx.font = 'bold 14px Orbitron, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'right';
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 4;
+        ctx.fillText('x' + slot.count, x + slotSize - 6, y + 16);
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    ctx.restore();
+  }
+};
+
 // Clear canvas with space background
 const clearCanvas = (ctx, canvas, trailEffect = true) => {
   if (trailEffect) {
@@ -737,4 +809,9 @@ const renderGame = (ctx, canvas, state, frameCount) => {
 
   // Draw streak timer (top right)
   drawStreakTimer(ctx, canvas, state.player);
+
+  // Draw hotbar at bottom center
+  if (state.hotbar) {
+    drawHotbar(ctx, canvas, state.hotbar, frameCount);
+  }
 };

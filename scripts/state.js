@@ -26,6 +26,7 @@ const createInitialState = (canvas) => ({
     down: false
   },
   activePowerUps: [], // Array of {name, timeRemaining, duration}
+  hotbar: [null, null, null], // 3 slots: { name: string, count: number } | null
   pendingPowerUpDrop: null,
   collectedPowerUp: null,
   shockwave: null, // {x, y, radius, active, speed, hitEnemies}
@@ -68,6 +69,64 @@ const addPowerUpToState = (state, powerUp) => ({
   ...state,
   powerUps: [...state.powerUps, powerUp]
 });
+
+// Hotbar helper functions
+
+// Check if a powerup can be added to hotbar (has empty slot OR can stack)
+const canAddToHotbar = (state, powerUpName) => {
+  const hasEmptySlot = state.hotbar.some(slot => slot === null);
+  const canStack = state.hotbar.some(slot => slot && slot.name === powerUpName);
+  return hasEmptySlot || canStack;
+};
+
+// Add a powerup to the hotbar (stacks if same type exists)
+const addToHotbar = (state, powerUpName) => {
+  const hotbar = [...state.hotbar];
+
+  // First, check if this powerup type already exists in hotbar (stack it)
+  const existingIndex = hotbar.findIndex(slot => slot && slot.name === powerUpName);
+  if (existingIndex !== -1) {
+    hotbar[existingIndex] = {
+      name: powerUpName,
+      count: hotbar[existingIndex].count + 1
+    };
+    return { ...state, hotbar };
+  }
+
+  // Otherwise, find first empty slot
+  const emptyIndex = hotbar.findIndex(slot => slot === null);
+  if (emptyIndex !== -1) {
+    hotbar[emptyIndex] = { name: powerUpName, count: 1 };
+    return { ...state, hotbar };
+  }
+
+  // Hotbar is full - should not reach here if caller checks isHotbarFull first
+  return state;
+};
+
+// Remove one powerup from a hotbar slot (decrements count or clears slot)
+const removeFromHotbar = (state, slotIndex) => {
+  if (slotIndex < 0 || slotIndex > 2) return state;
+
+  const slot = state.hotbar[slotIndex];
+  if (!slot) return state;
+
+  const hotbar = [...state.hotbar];
+
+  if (slot.count > 1) {
+    hotbar[slotIndex] = { name: slot.name, count: slot.count - 1 };
+  } else {
+    hotbar[slotIndex] = null;
+  }
+
+  return { ...state, hotbar };
+};
+
+// Get powerup name from hotbar slot
+const getHotbarSlot = (state, slotIndex) => {
+  if (slotIndex < 0 || slotIndex > 2) return null;
+  return state.hotbar[slotIndex];
+};
 
 // Add a new active power-up to the array (extends timer if already exists)
 const addActivePowerUp = (state, name, duration) => {

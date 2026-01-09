@@ -132,40 +132,217 @@ const drawParticle = (ctx, particle) => {
   ctx.globalAlpha = 1;
 };
 
-// Draw power-up - highly visible with pulsing and ring
-const drawPowerUp = (ctx, powerUp, frameCount) => {
-  const hue = (powerUp.colorHue + frameCount * 5) % 360;
-  const pulse = Math.sin(frameCount * 0.15) * 0.4 + 1;
-  const color = `hsl(${hue}, 100%, 65%)`;
+// Powerup color mapping
+const POWERUP_COLORS = {
+  health: '#00ff88',     // Green
+  speed: '#ffdd00',      // Yellow
+  cannon: '#ff8800',     // Orange
+  tiny: '#cc44ff',       // Purple
+  invincible: null,      // Rainbow (handled specially)
+  rapidFire: '#ff4444',  // Red
+  shockwave: '#00ffff',  // Cyan
+  multishot: '#ff66cc'   // Pink
+};
 
-  // Outer pulsing ring
-  const ringRadius = powerUp.radius + 8 + Math.sin(frameCount * 0.1) * 4;
+// Draw powerup symbol based on type
+const drawPowerUpSymbol = (ctx, x, y, size, type, frameCount) => {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  switch (type) {
+    case 'health':
+      // Plus/cross symbol
+      const crossSize = size * 0.6;
+      const crossThick = size * 0.25;
+      ctx.beginPath();
+      ctx.rect(-crossThick / 2, -crossSize / 2, crossThick, crossSize);
+      ctx.rect(-crossSize / 2, -crossThick / 2, crossSize, crossThick);
+      ctx.fill();
+      break;
+
+    case 'speed':
+      // Lightning bolt
+      const boltScale = size * 0.08;
+      ctx.beginPath();
+      ctx.moveTo(2 * boltScale, -6 * boltScale);
+      ctx.lineTo(-1 * boltScale, -1 * boltScale);
+      ctx.lineTo(1 * boltScale, -1 * boltScale);
+      ctx.lineTo(-2 * boltScale, 6 * boltScale);
+      ctx.lineTo(1 * boltScale, 1 * boltScale);
+      ctx.lineTo(-1 * boltScale, 1 * boltScale);
+      ctx.closePath();
+      ctx.fill();
+      break;
+
+    case 'cannon':
+      // Large bullet/projectile shape
+      const bulletR = size * 0.35;
+      ctx.beginPath();
+      ctx.arc(0, 0, bulletR, 0, Math.PI * 2);
+      ctx.fill();
+      // Inner ring for depth
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, bulletR * 0.5, 0, Math.PI * 2);
+      ctx.stroke();
+      break;
+
+    case 'tiny':
+      // Four arrows pointing inward
+      const arrowLen = size * 0.35;
+      const arrowHead = size * 0.15;
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 4; i++) {
+        ctx.save();
+        ctx.rotate(i * Math.PI / 2);
+        // Arrow line
+        ctx.beginPath();
+        ctx.moveTo(0, -arrowLen);
+        ctx.lineTo(0, -arrowHead);
+        ctx.stroke();
+        // Arrow head
+        ctx.beginPath();
+        ctx.moveTo(0, -arrowHead * 0.3);
+        ctx.lineTo(-arrowHead * 0.5, -arrowHead);
+        ctx.lineTo(arrowHead * 0.5, -arrowHead);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      break;
+
+    case 'invincible':
+      // Star shape
+      const outerR = size * 0.45;
+      const innerR = size * 0.2;
+      const points = 5;
+      ctx.beginPath();
+      for (let i = 0; i < points * 2; i++) {
+        const r = i % 2 === 0 ? outerR : innerR;
+        const angle = (i * Math.PI / points) - Math.PI / 2;
+        if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+        else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+      }
+      ctx.closePath();
+      ctx.fill();
+      break;
+
+    case 'rapidFire':
+      // Three bullets in a row
+      const dotR = size * 0.12;
+      const dotSpacing = size * 0.28;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.arc(i * dotSpacing, 0, dotR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+
+    case 'shockwave':
+      // Expanding wave rings
+      const wave1 = size * 0.2;
+      const wave2 = size * 0.35;
+      const wave3 = size * 0.5;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, wave1, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.arc(0, 0, wave2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.4;
+      ctx.beginPath();
+      ctx.arc(0, 0, wave3, 0, Math.PI * 2);
+      ctx.stroke();
+      break;
+
+    case 'multishot':
+      // Fan of 5 bullets spreading outward
+      const bulletSize = size * 0.1;
+      const fanRadius = size * 0.35;
+      const spreadAngle = Math.PI * 0.6; // 108 degrees total spread
+      for (let i = 0; i < 5; i++) {
+        const angle = -spreadAngle / 2 + (spreadAngle / 4) * i - Math.PI / 2;
+        const bx = Math.cos(angle) * fanRadius;
+        const by = Math.sin(angle) * fanRadius;
+        ctx.beginPath();
+        ctx.arc(bx, by, bulletSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Center origin dot
+      ctx.beginPath();
+      ctx.arc(0, size * 0.15, bulletSize * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+
+    default:
+      // Fallback: simple dot
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+  }
+
+  ctx.restore();
+};
+
+// Draw power-up with unique symbol for each type
+const drawPowerUp = (ctx, powerUp, frameCount) => {
+  const pulse = Math.sin(frameCount * 0.15) * 0.3 + 1;
+  const rotation = frameCount * 0.02;
+
+  // Get color based on powerup type
+  let color;
+  if (powerUp.name === 'invincible') {
+    // Rainbow cycling for invincible
+    const hue = (frameCount * 4) % 360;
+    color = `hsl(${hue}, 100%, 60%)`;
+  } else {
+    color = POWERUP_COLORS[powerUp.name] || '#ffffff';
+  }
+
+  // Outer pulsing glow ring
+  const ringRadius = powerUp.radius + 6 + Math.sin(frameCount * 0.1) * 3;
   ctx.save();
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   ctx.shadowColor = color;
-  ctx.shadowBlur = 15;
-  ctx.globalAlpha = 0.8;
+  ctx.shadowBlur = 20;
+  ctx.globalAlpha = 0.6;
   ctx.beginPath();
   ctx.arc(powerUp.x, powerUp.y, ringRadius, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 
-  // Inner core with strong glow
+  // Inner glowing core
   ctx.save();
-  ctx.shadowColor = '#ffffff';
-  ctx.shadowBlur = 20;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 25;
   ctx.fillStyle = color;
+  ctx.globalAlpha = 0.4;
   ctx.beginPath();
   ctx.arc(powerUp.x, powerUp.y, powerUp.radius * pulse, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
 
-  // Bright white center
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowBlur = 10;
-  ctx.beginPath();
-  ctx.arc(powerUp.x, powerUp.y, powerUp.radius * 0.4, 0, Math.PI * 2);
-  ctx.fill();
+  // Symbol with glow
+  ctx.save();
+  ctx.shadowColor = '#ffffff';
+  ctx.shadowBlur = 15;
+  // Slight rotation animation for some powerups
+  if (powerUp.name === 'invincible' || powerUp.name === 'shockwave') {
+    ctx.translate(powerUp.x, powerUp.y);
+    ctx.rotate(rotation);
+    ctx.translate(-powerUp.x, -powerUp.y);
+  }
+  drawPowerUpSymbol(ctx, powerUp.x, powerUp.y, powerUp.radius * 1.8, powerUp.name, frameCount);
   ctx.restore();
 };
 

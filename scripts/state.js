@@ -16,6 +16,7 @@ const createInitialState = (canvas) => ({
     isRunning: true,
     powerUpDropped: false,
     rapidFireActive: false,
+    multishotActive: false,
     gameStarted: false
   },
   input: {

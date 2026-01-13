@@ -30,7 +30,8 @@ const createInitialState = (canvas) => ({
   pendingPowerUpDrop: null,
   collectedPowerUp: null,
   shockwave: null, // {x, y, radius, active, speed, hitEnemies}
-  streakNotification: null // {title, color, framesRemaining}
+  streakNotification: null, // {title, color, framesRemaining}
+  gameStartTime: Date.now() // Track when game started for leaderboard validation
 });
 
 // Pure state updater functions

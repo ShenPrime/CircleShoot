@@ -31,6 +31,7 @@
         </p>
 
         <button class="btn-primary strtBtn">▶ START MISSION</button>
+        <button class="btn-secondary leaderboardBtn">🏆 LEADERBOARD</button>
 
         <p class="hint">Press <kbd>X</kbd> to pause anytime</p>
       </div>
@@ -55,6 +56,17 @@
           </div>
         </div>
 
+        <!-- Username Section -->
+        <div class="username-section">
+          <p class="stat-label">YOUR NAME</p>
+          <div class="username-input-row">
+            <input type="text" class="username-input" maxlength="20" placeholder="Loading...">
+            <button class="btn-icon save-name-btn" title="Save">✓</button>
+          </div>
+          <p class="name-status"></p>
+        </div>
+
+        <button class="btn-secondary leaderboardBtn">🏆 LEADERBOARD</button>
         <button class="btn-primary restartBtn">↻ TRY AGAIN</button>
       </div>
     </div>
@@ -88,6 +100,39 @@
       </div>
     </div>
 
+    <!-- Leaderboard Modal -->
+    <div class="modal leaderboard-modal" style="display: none;">
+      <div class="modal-content leaderboard-content">
+        <h1 class="modal-title">🏆 GLOBAL LEADERBOARD</h1>
+        
+        <!-- Player's own rank -->
+        <div class="player-rank-banner">
+          <span class="your-rank-label">YOUR RANK</span>
+          <span class="your-rank">#--</span>
+          <span class="your-best-label">BEST SCORE</span>
+          <span class="your-best">--</span>
+        </div>
+        
+        <!-- Leaderboard table -->
+        <div class="leaderboard-table-container">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>RANK</th>
+                <th>PLAYER</th>
+                <th>SCORE</th>
+              </tr>
+            </thead>
+            <tbody class="leaderboard-body">
+              <tr><td colspan="3" class="loading-text">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <button class="btn-primary close-leaderboard-btn">CLOSE</button>
+      </div>
+    </div>
+
     <!-- Load scripts in dependency order -->
     <script src="./scripts/utils.js"></script>
     <script src="./scripts/entities.js"></script>
@@ -95,6 +140,8 @@
     <script src="./scripts/rendering.js"></script>
     <script src="./scripts/powerups.js"></script>
     <script src="./scripts/state.js"></script>
+    <script src="./scripts/api.js"></script>
+    <script src="./scripts/leaderboard.js"></script>
     <script src="./scripts/index.js"></script>
   </body>
 </html>

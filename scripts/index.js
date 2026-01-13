@@ -327,6 +327,11 @@
 
   // Handle game over
   const handleGameOver = () => {
+    // Capture game data before clearing state
+    const finalScore = gameState.player.score;
+    const finalRank = gameState.player.rank || 1;
+    const gameDuration = Date.now() - gameState.gameStartTime;
+
     cancelAnimationFrame(animationId);
     clearAllIntervals();
     removeRapidFireListeners();
@@ -336,10 +341,10 @@
     hideElements([canvas]);
     hideMobileControls();
     showElements([gameOverScreen]);
-    setElementText(endScore, gameState.player.score);
+    setElementText(endScore, finalScore);
 
     // Display highest rank reached
-    const rankTitle = getRankTitle(gameState.player.rank || 1);
+    const rankTitle = getRankTitle(finalRank);
     setElementText(highestRankEl, rankTitle);
 
     // Display best streak
@@ -351,6 +356,12 @@
       setElementText(bestStreakEl, `${streakTitle} (${seconds}s)`);
     } else {
       setElementText(bestStreakEl, '-');
+    }
+
+    // Submit score to leaderboard (async, non-blocking)
+    if (typeof Leaderboard !== 'undefined' && Leaderboard.isInitialized) {
+      Leaderboard.submitGameScore(finalScore, finalRank, gameDuration);
+      Leaderboard.updateUsernameDisplay();
     }
 
     gameState = null;
@@ -908,5 +919,12 @@
       canvas.width = innerWidth;
       canvas.height = innerHeight - 3;
     });
+
+    // Initialize leaderboard system
+    if (typeof Leaderboard !== 'undefined') {
+      Leaderboard.init().catch(err => {
+        console.error('Failed to initialize leaderboard:', err);
+      });
+    }
   });
 })();

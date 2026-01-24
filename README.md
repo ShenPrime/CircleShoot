@@ -2,7 +2,7 @@
 
 A fast-paced arcade shooter with cosmic visuals, powerups, and infinite replayability.
 
-**[Play Now](https://shenprime.github.io/CircleShoot/)**
+**[Play Now](https://circleshoot-production.up.railway.app/)**
 
 ## About
 
